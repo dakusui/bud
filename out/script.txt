@@ -1,5 +1,0 @@
-# Just print a message 'Hello world'
-
-source  'lib/common.sh'
-
-echo '-e' 'hello, world'
