@@ -1,0 +1,2 @@
+# bud
+A library useful for scripts written in bash
