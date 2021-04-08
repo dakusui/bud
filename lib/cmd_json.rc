@@ -1,5 +1,12 @@
-"${__BUD__EXEC_SH:-false}" && return 0
-readonly __BUD__EXEC_SH=true
+"${__BUD__CMD_JSON_RC:-false}" && return 0
+readonly __BUD__CMD_JSON_RC=true
+
+##########################################################################################
+# cmd_json.rc: A library to run a JSON object as a command line.
+#
+# The entry point is "run_json_object" function.
+#
+##########################################################################################
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -101,7 +108,36 @@ function __bud__file_for_script() {
 function __bud__directory_for_output() {
   echo "out"
 }
-
+####
+# The argument looks like following.:
+# [source, json]
+# ----
+# {
+#		"description": [
+#			"Just print a message 'Hello world'"
+#		],
+#		"stdin": [
+#		],
+#		"shell": {
+#			"name": "bash",
+#			"options": [
+#				"-eu"
+#			]
+#		},
+#		"source": [
+#			"lib/common.rc"
+#		],
+#		"cmd": "echo",
+#		"args": [
+#			"-e",
+#			"hello, world"
+#		]
+#	}
+# ----
+# "description": array: An array of string which describes what this object executes.
+# "stdin": array: An array given to the command as stdin.
+#
+# 1: A JSON object which describes the command to be executed and input to it
 function run_json_object() {
   local _json_object="${1}"
   local _stdin _shell _script _i

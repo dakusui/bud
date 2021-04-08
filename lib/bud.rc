@@ -1,0 +1,6 @@
+"${__BUD__BUD_RC:-false}" && return 0
+readonly __BUD__BUD_RC=true
+
+source "$(dirname "${BASH_SOURCE[0]}")/opt.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/common.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"

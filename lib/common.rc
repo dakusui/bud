@@ -1,7 +1,7 @@
-"${__BUD__COMMON_SH:-false}" && return 0
-readonly __BUD__COMMON_SH=true
+"${__BUD__COMMON_RC:-false}" && return 0
+readonly __BUD__COMMON_RC=true
 
-source "$(dirname "${BASH_SOURCE[0]}")/envvars.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/envvars.rc"
 
 function join_by() {
   local d=${1-} f=${2-}
@@ -24,12 +24,10 @@ function quote() {
 }
 
 function app_name() {
-  local _ret
-  _ret="$(basename "${0}")"
-  echo "${_ret%.*}"
+  echo "${BUD_APP_NAME}"
 }
 
-function _escape_single_quote() {
+function escape_single_quote() {
   echo -n "${1}" | sed -r s/\'/\'\"\'\"\'/g
 }
 
@@ -48,7 +46,7 @@ function json_type_of() {
   echo "${_json}" | jq -crM "${_path}|type" || abort "Something went wrong _path:'${_path}' _json='${_json}'"
 }
 
-function bug_temp_file() {
+function bud_temp_file() {
   mktemp -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}"
 }
 
@@ -150,6 +148,19 @@ function debug() {
   fi
 }
 
+function info() {
+  if [[ "${BUD_INFO:-enabled}" == "enabled" ]]; then
+    local _caller
+    _caller="$(caller 0)"
+    # shellcheck disable=SC2086
+    _caller="$(__bud__format_caller ${_caller})"
+    message "INFO: ${_caller}: " "${@}"
+    if [[ "${BUD_LOG_FILE}" != "" ]]; then
+      message "INFO: ${_caller}: " "${@}" 2>>"${BUD_LOG_FILE}"
+    fi
+  fi
+}
+
 function error() {
   if [[ "${BUD_ERROR:-enabled}" == "enabled" ]]; then
     local _caller
@@ -173,7 +184,6 @@ function __bud__format_caller() {
 function abort() {
   local _exit_code=1
   print_stacktrace "ERROR:" "${@}"
-  echo "${_exit_code}" >"${PIDDIR}/$$"
   exit "${_exit_code}"
 }
 
@@ -182,13 +192,6 @@ function assert_that() {
   shift
   if ! eval "${@}"; then
     abort "$(printf "Condition was not satisfied:\n  Condition: %s\n  Detail: %s" "${_message}" "${*}")"
-  fi
-}
-
-function exit_if_aborted() {
-  if [[ -e "${PIDDIR}/$$" ]]; then
-    message "ERROR:" "${@}"
-    exit "$(cat "${PIDDIR}/$$")"
   fi
 }
 
@@ -205,11 +208,5 @@ function print_stacktrace() {
     _i=$((_i + 1))
   done
 }
-
-export BUD_APP_NAME
-BUD_APP_NAME="$(app_name)"
-export PIDDIR
-PIDDIR="/tmp/bud/${BUD_APP_NAME}/pid"
-mkdir -p "${PIDDIR}"
 
 trap abort ERR
