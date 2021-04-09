@@ -1,0 +1,160 @@
+"${__BUD__CMD_UNIT_RC:-false}" && return 0
+readonly __BUD__CMD_UNIT_RC=true
+
+source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
+
+function execute_test_json() {
+  local _json_object="${1}"
+  local _cmd_json
+  _cmd_json="$(json_value_at '.run' "${_json_object}")"
+  run_json_object "${_cmd_json}"
+
+  local _expectation
+  _expectation="$(json_value_at '.expectation' "${_json_object}")"
+  verify_cmd_execution_result "${_expectation}"
+}
+
+function verify_cmd_execution_result() {
+  local _json_object="${1}"
+  verify_exit_code "${_json_object}"
+  verify_stdout "${_json_object}"
+  verify_stderr "${_json_object}"
+}
+
+function verify_exit_code() {
+  local _json_object="${1}"
+  local _cond
+  mapfile -t _cond < <(json_value_at ".exitCode[]" "${_json_object}")
+  mapfile -t _actual_exit_code < "$(bud__file_for_exit_code)"
+  if [[ "${_cond[0]}" == "EQUAL" ]]; then
+    if [[ "${_cond[1]}" != "${_actual_exit_code[0]}" ]]; then
+      echo "Expectation mismatch: exitCode was expected to be '${_cond[1]}' but was '${_actual_exit_code[0]}'."
+    fi
+  elif [[ "${_cond[0]}" == "NOT_EQUAL" ]]; then
+    if [[ "${_cond[1]}" == "${_actual_exit_code[0]}" ]]; then
+      echo "Expectation mismatch: exitCode was expected NOT to be '${_cond[1]}' but was."
+    fi
+  else
+    abort "Unknown condition name: '${_cond[0]}' was specified for exit code checking."
+  fi
+}
+
+function verify_stdout {
+  local _json_object="${1}"
+  local _target_content
+  mapfile -t _target_content < "$(bud__file_for_stdout)"
+  _json_object="$(json_value_at ".stdout" "${_json_object}")"
+  verify_target_content "${_json_object}" "${_target_content[@]}"
+}
+
+function verify_stderr() {
+  local _json_object="${1}"
+  local _target_content
+  mapfile -t _target_content < "$(bud__file_for_stderr)"
+  _json_object="$(json_value_at ".stderr" "${_json_object}")"
+  verify_target_content "${_json_object}" "${_target_content[@]}"
+}
+
+# $1: JSON object that describes the expectation to be verified
+# {
+#   "present": [
+#      "regex:Hello.*world"
+#   ],
+#   "absent": [
+#      "regex:.*"
+#   ]
+# }
+# $2-: An array that conttains the content of the file
+function verify_target_content() {
+   local _json_object="${1}"
+   shift
+   local _presence_expectation
+   mapfile -t _presence_expectation < <(json_value_at ".present[]" "${_json_object}")
+   assert_presence "${_presence_expectation[@]}" "--" "${@}"
+
+   local _absence_expectation
+   mapfile -t _absence_expectation < <(json_value_at ".present[]" "${_json_object}")
+   assert_presence "${_absence_expectation[@]}" "--" "${@}"
+}
+
+function assert_presence() {
+  local _patterns=() _target_content=()
+  __bud__split_patterns_and_target_content "${@}"
+
+  if [[ "${#_patterns[@]}" == 0 ]]; then
+    return 0
+  fi
+
+  local _pattern _target_content_line
+  for _pattern in "${_patterns[@]}"; do
+    local _found=no
+    for _target_content_line in "${_target_content[@]}"; do
+      if __bud__pattern_matches_target_content_line "${_pattern}" "${_target_content_line}" ; then
+        _found=yes
+        break
+      fi
+    done
+    if [[ "${_found}" != yes ]]; then
+      echo "pattern: <${_pattern}> did not match any line."
+    fi
+  done
+}
+
+function assert_absence() {
+  local _patterns=() _target_content=()
+  __bud__split_patterns_and_target_content "${@}"
+
+  if [[ "${#_patterns[@]}" == 0 ]]; then
+    return 0
+  fi
+
+  local _pattern _target_content_line
+  for _pattern in "${_patterns[@]}"; do
+    for _target_content_line in "${_target_content[@]}"; do
+      if __bud__pattern_matches_target_content_line "${_pattern}" "${_target_content_line}" ; then
+        echo "pattern: <${_pattern}> matched with a line: <${_target_content_line}>"
+      fi
+    done
+  done
+}
+
+function __bud__split_patterns_and_target_content() {
+  local _i _state=READ_PATTERNS
+  for _i in "${@}"; do
+    if [[ "${_state}" == READ_PATTERNS ]]; then
+      if [[ "${_i}" == "--" ]]; then
+        _state=READ_TARGET_CONTENT
+        continue
+      fi
+      _patterns+=("${_i}")
+    elif [[ "${_state}" == READ_TARGET_CONTENT ]]; then
+      if [[ "${_i}" == "--" ]]; then
+        break
+      fi
+      _target_content+=("${_i}")
+    fi
+  done
+}
+
+function __bud__pattern_matches_target_content_line() {
+  local _pattern="${1}" _target_content_line="${2}"
+
+  if [[ "${_pattern}" == "regex:"* ]]; then
+    local _p="${_pattern#*:}"
+    if [[ "${_target_content_line}" =~ ${_p} ]]; then
+      return 0
+    fi
+    return 1
+  else
+    local _p
+    if [[ "${_pattern}" == "raw:"* ]]; then
+      _p="${_pattern#*:}"
+    else
+      _p="${_pattern}"
+    fi
+    if [[ "${_target_content_line}" == "${_p}" ]]; then
+      return 0
+    fi
+    return 1
+  fi
+}

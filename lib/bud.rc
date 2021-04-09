@@ -1,6 +1,11 @@
 "${__BUD__BUD_RC:-false}" && return 0
 readonly __BUD__BUD_RC=true
 
+# bud__package_private_function
+# __bud__private_function
+# public_function
+
 source "$(dirname "${BASH_SOURCE[0]}")/opt.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/common.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/cmd_unit.rc"

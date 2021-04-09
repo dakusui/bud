@@ -8,7 +8,7 @@ readonly __BUD__CMD_JSON_RC=true
 #
 ##########################################################################################
 
-source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/common.rc"
 
 function __bud__get_description_from_json_object() {
   local _json_object="${1}"
@@ -89,19 +89,19 @@ function __bud__compose_script_from_json_object() {
   __bud__compose_commandline_from_json_object "${_json_object}"
 }
 
-function __bud__file_for_stdout() {
+function bud__file_for_stdout() {
   echo "$(__bud__directory_for_output)/stdout.txt"
 }
 
-function __bud__file_for_stderr() {
+function bud__file_for_stderr() {
   echo "$(__bud__directory_for_output)/stderr.txt"
 }
 
-function __bud__file_for_exit_code() {
+function bud__file_for_exit_code() {
   echo "$(__bud__directory_for_output)/exit_code.txt"
 }
 
-function __bud__file_for_script() {
+function bud__file_for_script() {
   echo "$(__bud__directory_for_output)/script.txt"
 }
 
@@ -135,7 +135,7 @@ function __bud__directory_for_output() {
 #	}
 # ----
 # "description": array: An array of string which describes what this object executes.
-# "stdin": array: An array given to the command as stdin.
+# "stdin":       array: An array given to the command as stdin.
 #
 # 1: A JSON object which describes the command to be executed and input to it
 function run_json_object() {
@@ -151,11 +151,9 @@ function run_json_object() {
     echo "${_i}"
   done | ${_shell} <(for _i in "${_script[@]}"; do
     echo "${_i}"
-  done | tee "$(__bud__file_for_script)") >"$(__bud__file_for_stdout)" 2>"$(__bud__file_for_stderr)" &&
+  done | tee "$(bud__file_for_script)") >"$(bud__file_for_stdout)" 2>"$(bud__file_for_stderr)" &&
     _exit_code=$? ||
     _exit_code=$?
   message "exit_code:'${_exit_code}'"
-  echo "${_exit_code}" >"$(__bud__file_for_exit_code)"
+  echo "${_exit_code}" >"$(bud__file_for_exit_code)"
 }
-
-run_json_object "$(jq '.run' "tests/example.json")"

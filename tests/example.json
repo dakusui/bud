@@ -31,7 +31,7 @@
 		],
 		"stdout": {
 			"present": [
-				"regex:hello, world"
+				"regex:hello.+world"
 			],
 			"absent": [
 			]
