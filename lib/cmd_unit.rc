@@ -6,40 +6,44 @@ source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
 function execute_test_json() {
   local _json_object="${1}"
   local _cmd_json
-  message "hello1"
   _cmd_json="$(json_value_at '.run' "${_json_object}")"
-  message "hello2"
   run_json_object "${_cmd_json}"
-  message "hello3"
-
   local _expectation
   _expectation="$(json_value_at '.expectation' "${_json_object}")"
-  message "hello4"
   verify_cmd_execution_result "${_expectation}"
 }
 
 function verify_cmd_execution_result() {
   local _json_object="${1}"
-  local _exit_code_messages _stdout_messages _stderr_messages
-  local _exit_code_messages_json _stdout_messages_json _stderr_messages_json
 
-  message "hello5"
+  local _exit_code_messages _exit_code_messages_json _exit_code_successful=false
   mapfile -t _exit_code_messages < <(verify_exit_code "${_json_object}")
-  message "hello6"
   _exit_code_messages_json="$(to_json_array "${_exit_code_messages[@]}")"
-  message "hello7"
+  [[ "${#_exit_code_messages[@]}" == 0 ]] && _exit_code_successful=true
 
+  local _stdout_messages _stdout_messages_json _stdout_successful=false
   mapfile -t _stdout_messages < <(verify_stdout "${_json_object}")
   _stdout_messages_json="$(to_json_array "${_stdout_messages[@]}")"
+  debug "_stdout_messages[@]: <${_stdout_messages[*]}>"
+  debug "#_stdout_messages[@]: <${#_stdout_messages[@]}>"
+  [[ "${#_stdout_messages[@]}" == 0 ]] && _stdout_successful=true
 
+  local _stderr_messages _stderr_messages_json _stderr_successful=false
   mapfile -t _stderr_messages < <(verify_stderr "${_json_object}")
   _stderr_messages_json="$(to_json_array "${_stderr_messages[@]}")"
+  [[ "${#_stderr_messages[@]}" == 0 ]] && _stderr_successful=true
 
+  local _successful=false
+  [[ "${_exit_code_successful}" == true && "${_stdout_successful}" == true && "${_stderr_successful}" == true ]] && _successful=true
   jq -ncrM \
+    --argjson successful "${_successful}" \
+    --argjson exitCodeSuccessful "${_exit_code_successful}" \
     --argjson exitCode "${_exit_code_messages_json}" \
     --argjson stdout "${_stdout_messages_json}" \
+    --argjson stdoutSuccessful "${_stdout_successful}" \
     --argjson stderr "${_stderr_messages_json}" \
-    '{"exitCode":{"messages": $exitCode}, "stdout":{"messages": $stdout}, "stderr":{"messages": $stderr}}'
+    --argjson stderrSuccessful "${_stderr_successful}" \
+    '{"success": $successful,"exitCode":{"success": $exitCodeSuccessful, "messages": $exitCode}, "stdout":{"success": $stdoutSuccessful, "messages": $stdout}, "stderr":{"success": $stderrSuccessful, "messages": $stderr}}'
 }
 
 function verify_exit_code() {
@@ -49,11 +53,11 @@ function verify_exit_code() {
   mapfile -t _actual_exit_code <"$(bud__file_for_exit_code)"
   if [[ "${_cond[0]}" == "EQUAL" ]]; then
     if [[ "${_cond[1]}" != "${_actual_exit_code[0]}" ]]; then
-      echo "Expectation mismatch: exitCode was expected to be '${_cond[1]}' but was '${_actual_exit_code[0]}'."
+      echo "Exit code was expected to be <${_cond[1]}> but was <${_actual_exit_code[0]}>."
     fi
   elif [[ "${_cond[0]}" == "NOT_EQUAL" ]]; then
     if [[ "${_cond[1]}" == "${_actual_exit_code[0]}" ]]; then
-      echo "Expectation mismatch: exitCode was expected NOT to be '${_cond[1]}' but was."
+      echo "Exit code was expected NOT to be <${_cond[1]}> but was."
     fi
   else
     abort "Unknown condition name: '${_cond[0]}' was specified for exit code checking."
