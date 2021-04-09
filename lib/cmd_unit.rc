@@ -10,7 +10,16 @@ function execute_test_json() {
   run_json_object "${_cmd_json}"
   local _expectation
   _expectation="$(json_value_at '.expectation' "${_json_object}")"
-  verify_cmd_execution_result "${_expectation}"
+
+  local _result _execution_report _ret
+  _result="$(verify_cmd_execution_result "${_expectation}")"
+  _result="$(echo "${_result}" | jq -crM '{"report":{"result": .}}')"
+  _execution_report="$(compose_execution_report)"
+  _execution_report="$(echo "${_execution_report}" | jq -crM '{"report":{"execution": .}}')"
+  _ret="${_json_object}"
+  _ret="$(json_object_merge "${_ret}" "${_result}")"
+  _ret="$(json_object_merge "${_ret}" "${_execution_report}")"
+  echo "${_ret}"
 }
 
 function verify_cmd_execution_result() {
@@ -44,6 +53,27 @@ function verify_cmd_execution_result() {
     --argjson stderr "${_stderr_messages_json}" \
     --argjson stderrSuccessful "${_stderr_successful}" \
     '{"success": $successful,"exitCode":{"success": $exitCodeSuccessful, "messages": $exitCode}, "stdout":{"success": $stdoutSuccessful, "messages": $stdout}, "stderr":{"success": $stderrSuccessful, "messages": $stderr}}'
+}
+
+function compose_execution_report() {
+  local _script _exit_code _stdout _stderr
+  local _script_json _exit_code_json _stdout _stderr_json
+
+  mapfile -t _script < <(cat "$(bud__file_for_script)")
+  _script_json="$(to_json_array "${_script[@]}")"
+  mapfile -t _exit_code < <(cat "$(bud__file_for_exit_code)")
+  _exit_code_json="$(to_json_array "${_exit_code[@]}")"
+  mapfile -t _stdout < <(cat "$(bud__file_for_stdout)")
+  _stdout_json="$(to_json_array "${_stdout[@]}")"
+  mapfile -t _stderr < <(cat "$(bud__file_for_stderr)")
+  _stderr_json="$(to_json_array "${_stderr[@]}")"
+
+  jq -ncrM \
+    --argjson exitCode "${_exit_code_json}" \
+    --argjson script "${_script_json}" \
+    --argjson stdout "${_stdout_json}" \
+    --argjson stderr "${_stderr_json}" \
+    '{"exitCode":$exitCode,"script":$script,"stdout":$stdout,"stderr":$stderr}'
 }
 
 function verify_exit_code() {
