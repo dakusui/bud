@@ -154,6 +154,5 @@ function run_json_object() {
   done | tee "$(bud__file_for_script)") >"$(bud__file_for_stdout)" 2>"$(bud__file_for_stderr)" &&
     _exit_code=$? ||
     _exit_code=$?
-  message "exit_code:'${_exit_code}'"
   echo "${_exit_code}" >"$(bud__file_for_exit_code)"
 }

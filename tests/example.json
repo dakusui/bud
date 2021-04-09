@@ -16,7 +16,7 @@
 			]
 		},
 		"source": [
-			"lib/common.sh"
+			"lib/common.rc"
 		],
 		"cmd": "echo",
 		"args": [
@@ -27,11 +27,11 @@
 	"expectation": {
 		"exitCode": [
 			"EQUAL",
-			0
+			1
 		],
 		"stdout": {
 			"present": [
-				"regex:hello.+world"
+				"regex:Hello.+world"
 			],
 			"absent": [
 			]

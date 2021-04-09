@@ -3,3 +3,5 @@ readonly __BUD__OPT_RC=true
 
 set -eu -o pipefail
 shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
+
+trap abort ERR

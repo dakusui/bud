@@ -6,26 +6,47 @@ source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
 function execute_test_json() {
   local _json_object="${1}"
   local _cmd_json
+  message "hello1"
   _cmd_json="$(json_value_at '.run' "${_json_object}")"
+  message "hello2"
   run_json_object "${_cmd_json}"
+  message "hello3"
 
   local _expectation
   _expectation="$(json_value_at '.expectation' "${_json_object}")"
+  message "hello4"
   verify_cmd_execution_result "${_expectation}"
 }
 
 function verify_cmd_execution_result() {
   local _json_object="${1}"
-  verify_exit_code "${_json_object}"
-  verify_stdout "${_json_object}"
-  verify_stderr "${_json_object}"
+  local _exit_code_messages _stdout_messages _stderr_messages
+  local _exit_code_messages_json _stdout_messages_json _stderr_messages_json
+
+  message "hello5"
+  mapfile -t _exit_code_messages < <(verify_exit_code "${_json_object}")
+  message "hello6"
+  _exit_code_messages_json="$(to_json_array "${_exit_code_messages[@]}")"
+  message "hello7"
+
+  mapfile -t _stdout_messages < <(verify_stdout "${_json_object}")
+  _stdout_messages_json="$(to_json_array "${_stdout_messages[@]}")"
+
+  mapfile -t _stderr_messages < <(verify_stderr "${_json_object}")
+  _stderr_messages_json="$(to_json_array "${_stderr_messages[@]}")"
+
+  jq -ncrM \
+    --argjson exitCode "${_exit_code_messages_json}" \
+    --argjson stdout "${_stdout_messages_json}" \
+    --argjson stderr "${_stderr_messages_json}" \
+    '{"exitCode":{"messages": $exitCode}, "stdout":{"messages": $stdout}, "stderr":{"messages": $stderr}}'
 }
 
 function verify_exit_code() {
   local _json_object="${1}"
   local _cond
   mapfile -t _cond < <(json_value_at ".exitCode[]" "${_json_object}")
-  mapfile -t _actual_exit_code < "$(bud__file_for_exit_code)"
+  mapfile -t _actual_exit_code <"$(bud__file_for_exit_code)"
   if [[ "${_cond[0]}" == "EQUAL" ]]; then
     if [[ "${_cond[1]}" != "${_actual_exit_code[0]}" ]]; then
       echo "Expectation mismatch: exitCode was expected to be '${_cond[1]}' but was '${_actual_exit_code[0]}'."
@@ -39,10 +60,10 @@ function verify_exit_code() {
   fi
 }
 
-function verify_stdout {
+function verify_stdout() {
   local _json_object="${1}"
   local _target_content
-  mapfile -t _target_content < "$(bud__file_for_stdout)"
+  mapfile -t _target_content <"$(bud__file_for_stdout)"
   _json_object="$(json_value_at ".stdout" "${_json_object}")"
   verify_target_content "${_json_object}" "${_target_content[@]}"
 }
@@ -50,7 +71,7 @@ function verify_stdout {
 function verify_stderr() {
   local _json_object="${1}"
   local _target_content
-  mapfile -t _target_content < "$(bud__file_for_stderr)"
+  mapfile -t _target_content <"$(bud__file_for_stderr)"
   _json_object="$(json_value_at ".stderr" "${_json_object}")"
   verify_target_content "${_json_object}" "${_target_content[@]}"
 }
@@ -66,30 +87,34 @@ function verify_stderr() {
 # }
 # $2-: An array that conttains the content of the file
 function verify_target_content() {
-   local _json_object="${1}"
-   shift
-   local _presence_expectation
-   mapfile -t _presence_expectation < <(json_value_at ".present[]" "${_json_object}")
-   assert_presence "${_presence_expectation[@]}" "--" "${@}"
+  local _json_object="${1}"
+  shift
+  local _presence_expectation
+  mapfile -t _presence_expectation < <(json_value_at ".present[]" "${_json_object}")
+  assert_presence "${_presence_expectation[@]}" "--" "${@}"
 
-   local _absence_expectation
-   mapfile -t _absence_expectation < <(json_value_at ".present[]" "${_json_object}")
-   assert_presence "${_absence_expectation[@]}" "--" "${@}"
+  local _absence_expectation
+  mapfile -t _absence_expectation < <(json_value_at ".absent[]" "${_json_object}")
+  assert_absence "${_absence_expectation[@]}" "--" "${@}"
 }
 
 function assert_presence() {
   local _patterns=() _target_content=()
   __bud__split_patterns_and_target_content "${@}"
-
+  debug "Checking presence of patterns."
   if [[ "${#_patterns[@]}" == 0 ]]; then
     return 0
   fi
 
   local _pattern _target_content_line
+  debug "#_patterns[@]: '${#_patterns[@]}'"
+  debug "#_target_content[@]: '${#_target_content[@]}'"
   for _pattern in "${_patterns[@]}"; do
     local _found=no
+    debug "_pattern: '${_pattern}'"
     for _target_content_line in "${_target_content[@]}"; do
-      if __bud__pattern_matches_target_content_line "${_pattern}" "${_target_content_line}" ; then
+      if __bud__pattern_matches_target_content_line "${_pattern}" "${_target_content_line}"; then
+        debug "Undesired line was found: '${_target_content_line}'"
         _found=yes
         break
       fi
@@ -111,7 +136,7 @@ function assert_absence() {
   local _pattern _target_content_line
   for _pattern in "${_patterns[@]}"; do
     for _target_content_line in "${_target_content[@]}"; do
-      if __bud__pattern_matches_target_content_line "${_pattern}" "${_target_content_line}" ; then
+      if __bud__pattern_matches_target_content_line "${_pattern}" "${_target_content_line}"; then
         echo "pattern: <${_pattern}> matched with a line: <${_target_content_line}>"
       fi
     done

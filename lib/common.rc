@@ -4,8 +4,17 @@ readonly __BUD__COMMON_RC=true
 source "$(dirname "${BASH_SOURCE[0]}")/envvars.rc"
 
 function join_by() {
-  local d=${1-} f=${2-}
-  if shift 2; then printf %s "$f" "${@/#/$d}"; fi
+  local _d="${1:?You must specify at least a delimiter}"
+  shift
+  if [[ "${#}" == 0 ]]; then
+    return 0
+  fi
+  local _i _ret="${1}"
+  shift
+  for _i in "${@}"; do
+    _ret="${_ret}${_d}${_i}"
+  done
+  echo "${_ret}"
 }
 
 function urlencode() {
@@ -33,7 +42,9 @@ function escape_single_quote() {
 
 function to_json_array() {
   local _i
-  jq -ncRM < <(for _i in "${@}"; do echo "${_i}"; done)
+  for _i in "${@}"; do echo "${_i}"; done |
+    jq -R -c --stream '.' |
+    jq -s -crM '.'
 }
 
 function json_value_at() {
