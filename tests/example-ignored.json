@@ -1,11 +1,11 @@
 {
   "type": "NORMAL",
   "description": [
-    "This is a failing example NORMAL test."
+    "This is a passing example NORMAL test"
   ],
   "given": {
     "description": [
-      "This test should always be executed."
+      "This test should always be ignored."
     ],
     "stdin": [
     ],
@@ -17,13 +17,13 @@
     },
     "source": [
     ],
-    "cmd": ":",
+    "cmd": "false",
     "args": [
     ]
   },
   "when": {
     "description": [
-      "Just print a message 'Hello world'."
+      "Just print a message 'Hello world'"
     ],
     "stdin": [
     ],
@@ -45,11 +45,11 @@
   "then": {
     "exitCode": [
       "EQUAL",
-      1
+      0
     ],
     "stdout": {
       "present": [
-        "regex:Hello.+world"
+        "regex:hello.+world"
       ],
       "absent": [
       ]

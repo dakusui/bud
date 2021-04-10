@@ -3,20 +3,69 @@ readonly __BUD__CMD_UNIT_RC=true
 
 source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
 
+function run_test_json() {
+  local _json_object="${1}"
+  local _precheck_result _precheck
+  bud_trap
+  _precheck_result="$(precheck_test_json "${_json_object}")"
+  _precheck="$(json_value_at '.report.result.precheck' "${_precheck_result}")"
+  local _execution_result="{}"
+  if [[ "${_precheck}" == true  ]]; then
+    _execution_result="$(execute_test_json "${_json_object}")"
+  fi
+  local _ret="${_json_object}"
+  _ret="$(json_object_merge "${_ret}" "${_precheck_result}")"
+  _ret="$(json_object_merge "${_ret}" "${_execution_result}")"
+  echo "${_ret}"
+}
+
+function precheck_test_json() {
+  local _json_object="${1}"
+  local _cmd_json
+  debug "begin precheck"
+  _cmd_json="$(json_value_at '.given' "${_json_object}")"
+  debug "check-1"
+  run_json_object "${_cmd_json}"
+  debug "check-2"
+  local _expectation
+  _expectation="$(compose_precheck_expectation_json "${_json_object}")"
+  debug "check-3"
+  local _result _precheck_preport _ret
+  _result="$(verify_cmd_execution_result "${_expectation}")"
+  debug "check-4"
+  _result="$(echo "${_result}" | jq '.success|{"precheck": .}' | jq -crM '{"report":{"result": .}}')"
+  debug "check-5"
+  _precheck_preport="$(compose_execution_report)"
+  _precheck_preport="$(echo "${_precheck_preport}" | jq -crM '{"report":{"precheck": .}}')"
+  _ret="{}"
+  _ret="$(json_object_merge "${_ret}" "${_result}")"
+  _ret="$(json_object_merge "${_ret}" "${_precheck_preport}")"
+  echo "${_ret}"
+  debug "end precheck"
+}
+
+function compose_precheck_expectation_json() {
+  local _json_object="${1}"
+  local _ret
+  bud_trap
+  _ret="$(jq -ncrM '{"exitCode":["EQUAL",0],"stdout":{"present":[],"absent":[]},"stderr":{"present":[],"absent":[]}}')"
+  echo "${_ret}"
+}
+
 function execute_test_json() {
   local _json_object="${1}"
   local _cmd_json
-  _cmd_json="$(json_value_at '.run' "${_json_object}")"
+  _cmd_json="$(json_value_at '.when' "${_json_object}")"
   run_json_object "${_cmd_json}"
   local _expectation
-  _expectation="$(json_value_at '.expectation' "${_json_object}")"
+  _expectation="$(json_value_at '.then' "${_json_object}")"
 
   local _result _execution_report _ret
   _result="$(verify_cmd_execution_result "${_expectation}")"
   _result="$(echo "${_result}" | jq -crM '{"report":{"result": .}}')"
   _execution_report="$(compose_execution_report)"
   _execution_report="$(echo "${_execution_report}" | jq -crM '{"report":{"execution": .}}')"
-  _ret="${_json_object}"
+  _ret="{}"
   _ret="$(json_object_merge "${_ret}" "${_result}")"
   _ret="$(json_object_merge "${_ret}" "${_execution_report}")"
   echo "${_ret}"

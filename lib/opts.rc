@@ -7,7 +7,7 @@ shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 #####
 # A function to set trap on a signal.
 # In bud based tools, a pseudo signal ERR is handled by a function "abort" because
-# this function is called by the "opt.rc"
+# this function is called by the "opts.rc"
 # There is no known good way to guarantee to propagate "trap"s to subshells.
 # When you want to make your subshell report an error in the bud's standard way
 # call this function with in the subshell.
@@ -27,7 +27,14 @@ shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 # WILL be handled by the signal trap set outside of it.
 # This is because of the bash's implementation for optimization.
 function bud_trap() {
-  trap abort ERR
+  trap "abort ERR was reported by bash" ERR
+}
+
+####
+# This function is usually overridden by another implementation defined in "common.rc"
+function abort() {
+  echo "${*}" >&2
+  exit 1
 }
 
 bud_trap

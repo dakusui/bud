@@ -1,0 +1,121 @@
+{
+  "type": "NORMAL",
+  "description": [
+    "This is a failing example NORMAL test."
+  ],
+  "given": {
+    "description": [
+      "This test should always be executed."
+    ],
+    "stdin": [],
+    "shell": {
+      "name": "bash",
+      "options": [
+        "-eu"
+      ]
+    },
+    "source": [],
+    "cmd": ":",
+    "args": []
+  },
+  "when": {
+    "description": [
+      "Just print a message 'Hello world'."
+    ],
+    "stdin": [],
+    "shell": {
+      "name": "bash",
+      "options": [
+        "-eu"
+      ]
+    },
+    "source": [
+      "lib/common.rc"
+    ],
+    "cmd": "echo",
+    "args": [
+      "-e",
+      "hello, world"
+    ]
+  },
+  "then": {
+    "exitCode": [
+      "EQUAL",
+      1
+    ],
+    "stdout": {
+      "present": [
+        "regex:Hello.+world"
+      ],
+      "absent": []
+    },
+    "stderr": {
+      "present": [],
+      "absent": [
+        "regex:.+"
+      ]
+    }
+  },
+  "report": {
+    "result": {
+      "executed": true,
+      "success": false,
+      "given": {
+        "description": [
+          "This test should always be executed."
+        ],
+        "messages": [
+          "However, following precondition was not satisfied."
+        ]
+      },
+      "when": {
+        "exitCode": {
+          "success": false,
+          "messages": [
+            "Exit code was expected to be <1> but was <0>."
+          ]
+        },
+        "stdout": {
+          "success": false,
+          "messages": [
+            "pattern: <regex:Hello.+world> did not match any line."
+          ]
+        },
+        "stderr": {
+          "success": true,
+          "messages": []
+        }
+      }
+    },
+    "precheck": {
+      "exitCode": [
+        "0"
+      ],
+      "script": [
+        "# Just print a message 'Hello world'.",
+        "",
+        "source  'lib/common.rc'",
+        "",
+        "echo '-e' 'hello, world'"
+      ],
+      "stdout": [],
+      "stderr": []
+    },
+    "execution": {
+      "exitCode": [
+        "0"
+      ],
+      "script": [
+        "# Just print a message 'Hello world'.",
+        "",
+        "source  'lib/common.rc'",
+        "",
+        "echo '-e' 'hello, world'"
+      ],
+      "stdout": [
+        "hello, world"
+      ],
+      "stderr": []
+    }
+  }
+}
