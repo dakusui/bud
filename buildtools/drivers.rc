@@ -1,3 +1,7 @@
+"${__BUILD__DRIBERS_RC:-false}" && return 0
+readonly __BUILD__DRIBERS_RC=-true
+
+
 function _test_package() {
   local _version="${1}"
   local _target_tests="${2}"

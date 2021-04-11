@@ -1,0 +1,64 @@
+{
+  "type": "NORMAL",
+  "description": [
+    "This is a passing example NORMAL test"
+  ],
+  "given": {
+    "description": [
+      "This test should always be executed."
+    ],
+    "stdin": [
+    ],
+    "shell": {
+      "name": "bash",
+      "options": [
+        "-eu",
+        "-E"
+      ]
+    },
+    "source": [
+    ],
+    "cmd": ":",
+    "args": [
+    ]
+  },
+  "when": {
+    "description": [
+    ],
+    "stdin": [
+    ],
+    "shell": {
+      "name": "bash",
+      "options": [
+        "-eu",
+        "-E"
+      ]
+    },
+    "source": [
+    ],
+    "cmd": "echo",
+    "args": [
+      "-e",
+      "hello, world"
+    ]
+  },
+  "then": {
+    "exitCode": [
+      "EQUAL",
+      0
+    ],
+    "stdout": {
+      "present": [
+      ],
+      "absent": [
+      ]
+    },
+    "stderr": {
+      "present": [
+      ],
+      "absent": [
+        "regex:.+"
+      ]
+    }
+  }
+}

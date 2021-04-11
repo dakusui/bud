@@ -3,9 +3,10 @@
 set -eu -o pipefail -o errtrace
 shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
-source "buildtools/utils.rc"
-source "buildtools/build_info.rc"
-source "buildtools/drivers.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/buildtools/utils.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/buildtools/build_info.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/buildtools/drivers.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/buildtools/jq-front.rc"
 
 function execute_stage() {
   local _stage="${1}"

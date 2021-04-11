@@ -1,3 +1,6 @@
+"${__BUILD__UNITS_RC:-false}" && return 0
+readonly __BUILD__UNITS_RC=-true
+
 ####
 # Used when a condition is not met and a program should NOT go on.
 function abort() {

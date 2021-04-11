@@ -1,3 +1,6 @@
+"${__BUILD__BUILD_RC:-false}" && return 0
+readonly __BUILD__BUILD_RC=-true
+
 BASEDIR="$(pwd)"
 DOCDIR="${BASEDIR}/doc"
 DOCSRCDIR="${BASEDIR}/adoc"
