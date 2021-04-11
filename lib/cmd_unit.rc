@@ -7,11 +7,11 @@ function run_test_json() {
   local _json_object="${1}"
   local _precheck_result _precheck
   bud_trap
-  _precheck_result="$(precheck_test_json "${_json_object}")"
+  _precheck_result="$(__bud__precheck_test_json "${_json_object}")"
   _precheck="$(json_value_at '.report.result.precheck' "${_precheck_result}")"
   local _execution_result="{}"
   if [[ "${_precheck}" == true  ]]; then
-    _execution_result="$(execute_test_json "${_json_object}")"
+    _execution_result="$(__bud__execute_test_json "${_json_object}")"
   fi
   local _ret="${_json_object}"
   _ret="$(json_object_merge "${_ret}" "${_precheck_result}")"
@@ -19,7 +19,7 @@ function run_test_json() {
   echo "${_ret}"
 }
 
-function precheck_test_json() {
+function __bud__precheck_test_json() {
   local _json_object="${1}"
   local _cmd_json
   debug "begin precheck"
@@ -28,14 +28,14 @@ function precheck_test_json() {
   run_json_object "${_cmd_json}"
   debug "check-2"
   local _expectation
-  _expectation="$(compose_precheck_expectation_json "${_json_object}")"
+  _expectation="$(__bud__compose_precheck_expectation_json "${_json_object}")"
   debug "check-3"
   local _result _precheck_preport _ret
-  _result="$(verify_cmd_execution_result "${_expectation}")"
+  _result="$(__buf__verify_cmd_execution_result "${_expectation}")"
   debug "check-4"
   _result="$(echo "${_result}" | jq '.success|{"precheck": .}' | jq -crM '{"report":{"result": .}}')"
   debug "check-5"
-  _precheck_preport="$(compose_execution_report)"
+  _precheck_preport="$(__bud__compose_execution_report)"
   _precheck_preport="$(echo "${_precheck_preport}" | jq -crM '{"report":{"precheck": .}}')"
   _ret="{}"
   _ret="$(json_object_merge "${_ret}" "${_result}")"
@@ -44,7 +44,7 @@ function precheck_test_json() {
   debug "end precheck"
 }
 
-function compose_precheck_expectation_json() {
+function __bud__compose_precheck_expectation_json() {
   local _json_object="${1}"
   local _ret
   bud_trap
@@ -52,7 +52,7 @@ function compose_precheck_expectation_json() {
   echo "${_ret}"
 }
 
-function execute_test_json() {
+function __bud__execute_test_json() {
   local _json_object="${1}"
   local _cmd_json
   _cmd_json="$(json_value_at '.when' "${_json_object}")"
@@ -61,9 +61,9 @@ function execute_test_json() {
   _expectation="$(json_value_at '.then' "${_json_object}")"
 
   local _result _execution_report _ret
-  _result="$(verify_cmd_execution_result "${_expectation}")"
+  _result="$(__buf__verify_cmd_execution_result "${_expectation}")"
   _result="$(echo "${_result}" | jq -crM '{"report":{"result": .}}')"
-  _execution_report="$(compose_execution_report)"
+  _execution_report="$(__bud__compose_execution_report)"
   _execution_report="$(echo "${_execution_report}" | jq -crM '{"report":{"execution": .}}')"
   _ret="{}"
   _ret="$(json_object_merge "${_ret}" "${_result}")"
@@ -71,23 +71,23 @@ function execute_test_json() {
   echo "${_ret}"
 }
 
-function verify_cmd_execution_result() {
+function __buf__verify_cmd_execution_result() {
   local _json_object="${1}"
 
   local _exit_code_messages _exit_code_messages_json _exit_code_successful=false
-  mapfile -t _exit_code_messages < <(verify_exit_code "${_json_object}")
+  mapfile -t _exit_code_messages < <(__bud__verify_exit_code "${_json_object}")
   _exit_code_messages_json="$(to_json_array "${_exit_code_messages[@]}")"
   [[ "${#_exit_code_messages[@]}" == 0 ]] && _exit_code_successful=true
 
   local _stdout_messages _stdout_messages_json _stdout_successful=false
-  mapfile -t _stdout_messages < <(verify_stdout "${_json_object}")
+  mapfile -t _stdout_messages < <(__bud__verify_stdout "${_json_object}")
   _stdout_messages_json="$(to_json_array "${_stdout_messages[@]}")"
   debug "_stdout_messages[@]: <${_stdout_messages[*]}>"
   debug "#_stdout_messages[@]: <${#_stdout_messages[@]}>"
   [[ "${#_stdout_messages[@]}" == 0 ]] && _stdout_successful=true
 
   local _stderr_messages _stderr_messages_json _stderr_successful=false
-  mapfile -t _stderr_messages < <(verify_stderr "${_json_object}")
+  mapfile -t _stderr_messages < <(__bud__verify_stderr "${_json_object}")
   _stderr_messages_json="$(to_json_array "${_stderr_messages[@]}")"
   [[ "${#_stderr_messages[@]}" == 0 ]] && _stderr_successful=true
 
@@ -104,7 +104,7 @@ function verify_cmd_execution_result() {
     '{"success": $successful,"exitCode":{"success": $exitCodeSuccessful, "messages": $exitCode}, "stdout":{"success": $stdoutSuccessful, "messages": $stdout}, "stderr":{"success": $stderrSuccessful, "messages": $stderr}}'
 }
 
-function compose_execution_report() {
+function __bud__compose_execution_report() {
   local _script _exit_code _stdout _stderr
   local _script_json _exit_code_json _stdout _stderr_json
 
@@ -125,7 +125,7 @@ function compose_execution_report() {
     '{"exitCode":$exitCode,"script":$script,"stdout":$stdout,"stderr":$stderr}'
 }
 
-function verify_exit_code() {
+function __bud__verify_exit_code() {
   local _json_object="${1}"
   local _cond
   mapfile -t _cond < <(json_value_at ".exitCode[]" "${_json_object}")
@@ -143,20 +143,20 @@ function verify_exit_code() {
   fi
 }
 
-function verify_stdout() {
+function __bud__verify_stdout() {
   local _json_object="${1}"
   local _target_content
   mapfile -t _target_content <"$(bud__file_for_stdout)"
   _json_object="$(json_value_at ".stdout" "${_json_object}")"
-  verify_target_content "${_json_object}" "${_target_content[@]}"
+  __bud__verify_target_content "${_json_object}" "${_target_content[@]}"
 }
 
-function verify_stderr() {
+function __bud__verify_stderr() {
   local _json_object="${1}"
   local _target_content
   mapfile -t _target_content <"$(bud__file_for_stderr)"
   _json_object="$(json_value_at ".stderr" "${_json_object}")"
-  verify_target_content "${_json_object}" "${_target_content[@]}"
+  __bud__verify_target_content "${_json_object}" "${_target_content[@]}"
 }
 
 # $1: JSON object that describes the expectation to be verified
@@ -169,19 +169,19 @@ function verify_stderr() {
 #   ]
 # }
 # $2-: An array that conttains the content of the file
-function verify_target_content() {
+function __bud__verify_target_content() {
   local _json_object="${1}"
   shift
   local _presence_expectation
   mapfile -t _presence_expectation < <(json_value_at ".present[]" "${_json_object}")
-  assert_presence "${_presence_expectation[@]}" "--" "${@}"
+  __bud__assert_presence "${_presence_expectation[@]}" "--" "${@}"
 
   local _absence_expectation
   mapfile -t _absence_expectation < <(json_value_at ".absent[]" "${_json_object}")
-  assert_absence "${_absence_expectation[@]}" "--" "${@}"
+  __bud__assert_absence "${_absence_expectation[@]}" "--" "${@}"
 }
 
-function assert_presence() {
+function __bud__assert_presence() {
   local _patterns=() _target_content=()
   __bud__split_patterns_and_target_content "${@}"
   debug "Checking presence of patterns."
@@ -208,7 +208,7 @@ function assert_presence() {
   done
 }
 
-function assert_absence() {
+function __bud__assert_absence() {
   local _patterns=() _target_content=()
   __bud__split_patterns_and_target_content "${@}"
 
