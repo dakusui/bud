@@ -1,0 +1,4 @@
+function execute_test_release() {
+  local _target_tests="${1:-*}"
+  _test_package "${TARGET_VERSION}" "${_target_tests}"
+}

@@ -2,6 +2,10 @@
 set -E -eu -o pipefail
 shopt -s inherit_errexit
 
+####
+# A tool to generate 'index.html`
+####
+
 source "$(dirname "${BASH_SOURCE[0]}")/utils.rc"
 
 function extract_style() {

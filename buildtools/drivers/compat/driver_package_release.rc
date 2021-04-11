@@ -1,0 +1,4 @@
+function execute_package_release() {
+  _build "${TARGET_VERSION}"
+  _build "latest"
+}

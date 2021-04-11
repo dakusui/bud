@@ -1,0 +1,5 @@
+function execute_release() {
+  docker login
+  docker push "${DOCKER_REPO_NAME}:${TARGET_VERSION}"
+  docker push "${DOCKER_REPO_NAME}:latest"
+}

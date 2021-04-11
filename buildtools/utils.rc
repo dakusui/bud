@@ -33,7 +33,7 @@ function message() {
 
 function _format_caller() {
   local _line="${1:-???}" _function="${2:-unknown}" _file="${3:-unknown file}"
-  printf "%-30s: %4s: %20s\n" "${_file}" "${_line}" "${_function}"
+  printf "%-40s: %4s: %20s\n" "${_file}" "${_line}" "${_function}"
 }
 
 trap abort ERR
