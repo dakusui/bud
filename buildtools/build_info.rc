@@ -2,8 +2,8 @@
 readonly __BUILD__BUILD_RC=-true
 
 BASEDIR="$(pwd)"
-DOCDIR="${BASEDIR}/doc"
-DOCSRCDIR="${BASEDIR}/adoc"
+DOCDIR="${BASEDIR}/out/doc"
+DOCSRCDIR="${BASEDIR}/src/adoc"
 LATEST_RELEASED_VERSION="$(printf "v%s.%s" "$(jq -r -c '.version.latestReleased.major' "${BASEDIR}/build_info.json")" \
                                            "$(jq -r -c '.version.latestReleased.minor' "${BASEDIR}/build_info.json")")"
 TARGET_VERSION="$(printf "v%s.%s" "$(jq -r -c '.version.target.major' "${BASEDIR}/build_info.json")" \

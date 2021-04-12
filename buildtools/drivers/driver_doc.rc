@@ -6,18 +6,19 @@ function execute_doc() {
   [[ $? == 0 ]] || abort "Failed to copy 'resources' directory."
   message "...done"
   while IFS= read -r -d '' i; do
-    local _src_file="/documents/adoc/${i##*/}"
+    local _src_file="/docsrc/${i##*/}"
     local _dest_file="${i%.adoc}"
-    _dest_file="/documents/doc/${_dest_file##*/}.html"
+    _dest_file="/doc/${_dest_file##*/}.html"
     message "Processing '${_src_file}'"
     docker run --rm \
       --user "$(id -u):$(id -g)" \
-      -v "${BASEDIR}":/documents/ \
+      -v "${DOCSRCDIR}":/docsrc/ \
+      -v "${DOCDIR}":/doc/ \
       asciidoctor/docker-asciidoctor \
       asciidoctor --trace -r asciidoctor-diagram -a toc=left "${_src_file}" -o "${_dest_file}"
-      #ls /documents/adoc
+      #ls /docsrc/adoc
       # asciidoctor -r asciidoctor-diagram -a toc=left "${_src_file}" -o "${_dest_file}"
-    [[ $? == 0 ]] || abort "Failed to process: '${_src_file}'"
+    [[ $? == 0 ]] || abort "Failed to process: '${_src_file}'(From:${i})"
     message "...done"
   done < <(find "${DOCSRCDIR}" -type f -name '*.adoc' -print0)
   message "Generating '${DOCDIR}/index.html'"
