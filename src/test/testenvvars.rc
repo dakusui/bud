@@ -1,14 +1,14 @@
 "${__BUILD__TESTENVVARS_RC:-false}" && return 0
 readonly __BUILD__TESTENVVARS_RC=true
 
-EXECBASE_DIR="${EXECBASE_DIR:-"$(dirname "$(dirname "${BASH_SOURCE[0]}")")"}"
-echo "EXECBASE_DIR: $EXECBASE_DIR" >&2
+EXEC_BASEDIR="${EXEC_BASEDIR:-"$(dirname "$(dirname "${BASH_SOURCE[0]}")")"}"
+echo "EXEC_BASEDIR: $EXEC_BASEDIR" >&2
 PROJECT_DIR="${PROJECT_DIR:-"$(dirname "${BASH_SOURCE[0]}")"}"
-LIBDIR="${LIBDIR:-${EXECBASE_DIR}/lib}"
-TESTDIR="${TESTDIR:-${EXECBASE_DIR}/test}"
-TESTREPORTDIR="${TESTREPORTDIR:-${EXECBASE_DIR}/testreport}"
+LIBDIR="${LIBDIR:-${EXEC_BASEDIR}/lib}"
+TESTDIR="${TESTDIR:-${EXEC_BASEDIR}/test}"
+TESTREPORTDIR="${TESTREPORTDIR:-${EXEC_BASEDIR}/testreport}"
 
-export EXECBASE_DIR
+export EXEC_BASEDIR
 export SRCDIR
 export LIBDIR
 export TESTDIR

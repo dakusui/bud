@@ -33,7 +33,7 @@ bud/                  PROJECT_DIR
 |`$(pwd)`
 |`$(pwd)`
 
-|`EXECBASE_DIR`
+|`EXEC_BASEDIR`
 | `$\{OUTDIR\}`
 |`${PROJECT_DIR}/src`
 

@@ -4,7 +4,7 @@ readonly __BUILD__BUILD_RC=true
 PROJECT_DIR="$(pwd)"
 SRCDIR="${PROJECT_DIR}/src"
 OUTDIR="${PROJECT_DIR}/out"
-EXECBASE_DIR="${OUTDIR}"
+EXEC_BASEDIR="${OUTDIR}"
 DOCDIR="${PROJECT_DIR}/out/doc"
 DOCSRCDIR="${PROJECT_DIR}/out/adoc"
 LIBDIR="${OUTDIR}/lib"
@@ -24,7 +24,7 @@ export HOMEPAGE
 export PROJECT_DIR
 export SRCDIR
 export OUTDIR
-export EXECBASE_DIR
+export EXEC_BASEDIR
 export DOCDIR
 export DOCSRCDIR
 export LIBDIR
