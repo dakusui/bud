@@ -2,3 +2,4 @@
 readonly __BUILD__DRIVERS_RC=-true
 
 source "$(dirname "${BASH_SOURCE[0]}")/drivers/driver_doc.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/drivers/driver_clean.rc"

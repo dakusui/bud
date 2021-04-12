@@ -1,0 +1,4 @@
+function execute_clean() {
+  rm -fr "${BASEDIR}/"'?'
+  rm -fr "out"
+}
