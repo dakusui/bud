@@ -1,6 +1,7 @@
 function execute_doc() {
   local i
   message "Preparing a directory for documents: '${DOCDIR}'"
+
   mkdir -p "${DOCDIR}/resources"
   cp -r "${DOCSRCDIR}/resources/"* "${DOCDIR}/resources/"
   [[ $? == 0 ]] || abort "Failed to copy 'resources' directory."

@@ -34,7 +34,7 @@
       ]
     },
     "source": [
-      "lib/common.rc"
+      "$EXECBASE_DIR/lib/common.rc"
     ],
     "cmd": "echo",
     "args": [

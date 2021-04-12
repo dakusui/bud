@@ -1,4 +1,4 @@
 function execute_clean() {
-  rm -fr "${BASEDIR}/"'?'
+  rm -fr "${PROJECT_DIR}/"'?'
   rm -fr "out"
 }

@@ -1,5 +1,5 @@
 "${__BUILD__JQ_FRONT_RC:-false}" && return 0
-readonly __BUILD__JQ_FRONT_RC=-true
+readonly __BUILD__JQ_FRONT_RC=true
 
 source "$(dirname "${BASH_SOURCE[0]}")/cm.rc"
 

@@ -1,19 +1,32 @@
 "${__BUILD__BUILD_RC:-false}" && return 0
-readonly __BUILD__BUILD_RC=-true
+readonly __BUILD__BUILD_RC=true
 
-BASEDIR="$(pwd)"
-DOCDIR="${BASEDIR}/out/doc"
-DOCSRCDIR="${BASEDIR}/src/adoc"
-LATEST_RELEASED_VERSION="$(printf "v%s.%s" "$(jq -r -c '.version.latestReleased.major' "${BASEDIR}/build_info.json")" \
-                                           "$(jq -r -c '.version.latestReleased.minor' "${BASEDIR}/build_info.json")")"
-TARGET_VERSION="$(printf "v%s.%s" "$(jq -r -c '.version.target.major' "${BASEDIR}/build_info.json")" \
-                                  "$(jq -r -c '.version.target.minor' "${BASEDIR}/build_info.json")")"
-APP_NAME="$(jq -r -c '.appName' "${BASEDIR}/build_info.json")"
-HOMEPAGE="$(jq -r -c '.homepage' "${BASEDIR}/build_info.json")"
+PROJECT_DIR="$(pwd)"
+SRCDIR="${PROJECT_DIR}/src"
+OUTDIR="${PROJECT_DIR}/out"
+EXECBASE_DIR="${OUTDIR}"
+DOCDIR="${PROJECT_DIR}/out/doc"
+DOCSRCDIR="${PROJECT_DIR}/out/adoc"
+LIBDIR="${OUTDIR}/lib"
+TESTDIR="${OUTDIR}/test"
+TESTREPORTDIR="${OUTDIR}/testreport"
+LATEST_RELEASED_VERSION="$(printf "v%s.%s" "$(jq -r -c '.version.latestReleased.major' "${PROJECT_DIR}/build_info.json")" \
+                                           "$(jq -r -c '.version.latestReleased.minor' "${PROJECT_DIR}/build_info.json")")"
+TARGET_VERSION="$(printf "v%s.%s" "$(jq -r -c '.version.target.major' "${PROJECT_DIR}/build_info.json")" \
+                                  "$(jq -r -c '.version.target.minor' "${PROJECT_DIR}/build_info.json")")"
+APP_NAME="$(jq -r -c '.appName' "${PROJECT_DIR}/build_info.json")"
+HOMEPAGE="$(jq -r -c '.homepage' "${PROJECT_DIR}/build_info.json")"
+
 export LATEST_RELEASED_VERSION
 export TARGET_VERSION
 export APP_NAME
-export BASEDIR
+export HOMEPAGE
+export PROJECT_DIR
+export SRCDIR
+export OUTDIR
+export EXECBASE_DIR
 export DOCDIR
 export DOCSRCDIR
-export HOMEPAGE
+export LIBDIR
+export TESTDIR
+export TESTREPORTDIR

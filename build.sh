@@ -26,19 +26,8 @@ function main() {
     main doc test
     return 0
   fi
-  if [[ ${1} == OSX ]]; then
-    main doc package test_package
-    return 0
-  fi
-  if [[ ${1} == PACKAGE ]]; then
-    main doc test package test_package
-    return 0
-  fi
-  if [[ ${1} == DEPLOY ]]; then
-    main doc test package test_package deploy
-    return 0
-  elif [[ ${1} == RELEASE ]]; then
-    main check_release doc test package_release test_release release post_release
+  if [[ ${1} == DOC ]]; then
+    main clean prepare doc
     return 0
   fi
 

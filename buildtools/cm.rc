@@ -1,5 +1,5 @@
 "${__BUILD__CM_RC:-false}" && return 0
-readonly __BUILD__CM_RC=-true
+readonly __BUILD__CM_RC=true
 
 ####
 # BEGIN: Default implementations of user provided functions

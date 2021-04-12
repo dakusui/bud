@@ -1,5 +1,19 @@
 "${__BUILD__DRIVERS_RC:-false}" && return 0
-readonly __BUILD__DRIVERS_RC=-true
+readonly __BUILD__DRIVERS_RC=true
 
-source "$(dirname "${BASH_SOURCE[0]}")/drivers/driver_doc.rc"
-source "$(dirname "${BASH_SOURCE[0]}")/drivers/driver_clean.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/utils.rc"
+
+function load_drivers() {
+  local -a _drivers
+  # shellcheck disable=SC2012
+  mapfile -t _drivers < <(find "$(dirname "${BASH_SOURCE[0]}")/drivers/"*.rc -maxdepth 0 -mindepth 0| sort)
+  local _i
+  for _i in "${_drivers[@]}"; do
+    message "SOURCING:'${_i}'..."
+    # shellcheck disable=SC1090
+    source "${_i}"
+    message "...SOURCED"
+  done
+}
+
+load_drivers
