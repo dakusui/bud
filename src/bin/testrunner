@@ -93,7 +93,7 @@ function run_each_test() {
     local _execution_result_json_boolean
     _execution_result_json_boolean="$(echo "${_execution_result}" | jq -crM '.report.result.success')"
     if [[ "${_execution_result_json_boolean}" != true ]]; then
-      _execution_result_json="$(jq -ncrM --arg v "${_execution_result_json_boolean}" '{"report":{"execution":false,"driverOutput":$v}}')"
+      _execution_result="$(jq -ncrM --arg v "${_execution_result_json_boolean}" '{"report":{"execution":false,"driverOutput":$v}}')"
     fi
     _test_result_json="$(json_object_merge "${_execution_result}" "${_test_result_json}")"
   fi
