@@ -18,9 +18,13 @@ function print_stacktrace() {
   while _e="$(caller $_i)"; do
     # shellcheck disable=SC2086
     _e="$(_format_caller ${_e})"
-    echo "  at ${_e}" >&2
+    print_message "  at ${_e}"
     _i=$((_i + 1))
   done
+}
+
+function print_message() {
+  echo "${@}" >&2
 }
 
 function message() {
@@ -28,7 +32,7 @@ function message() {
   _caller="$(caller 0)"
   # shellcheck disable=SC2086
   _caller="$(_format_caller ${_caller})"
-  echo "${_caller}: " "${@}" >&2
+  print_message "${_caller}: " "${@}"
 }
 
 function _format_caller() {

@@ -108,23 +108,23 @@ function envsubst_variables() {
   echo "TESTREPORTDIR"
 }
 
+function bud__file_for_exit_code() {
+  echo "$(bud__directory_for_output)/exit_code.txt"
+}
+
 function bud__file_for_stdout() {
-  echo "$(__bud__directory_for_output)/stdout.txt"
+  echo "$(bud__directory_for_output)/stdout.txt"
 }
 
 function bud__file_for_stderr() {
-  echo "$(__bud__directory_for_output)/stderr.txt"
-}
-
-function bud__file_for_exit_code() {
-  echo "$(__bud__directory_for_output)/exit_code.txt"
+  echo "$(bud__directory_for_output)/stderr.txt"
 }
 
 function bud__file_for_script() {
-  echo "$(__bud__directory_for_output)/script.txt"
+  echo "$(bud__directory_for_output)/script.txt"
 }
 
-function __bud__directory_for_output() {
+function bud__directory_for_output() {
   echo "out"
 }
 ####

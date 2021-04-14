@@ -1,0 +1,164 @@
+#!/bin/bash -eu
+set -E -eu -o pipefail
+shopt -s inherit_errexit
+
+source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/bud.rc"
+
+function list_tests() {
+  local _test_rootdir="${1%/}"
+  find "${_test_rootdir}" -name '*.json' -or -name '*.sh' |
+    grep -E '(test-.+|.*-test|test)(\.sh|\.json)' |
+    sed -r 's!'"${_test_rootdir}/"'!!'
+}
+
+function precheck_each_test() {
+  local _testname="${1}" _out="${2}"
+  __execute_test_stage "${_testname}" "precheck" "precheck" "Precheck" "${_out}"
+}
+
+function execute_each_test() {
+  local _testname="${1}" _out="${2}"
+  __execute_test_stage "${_testname}" "execute" "success" "Execution" "${_out}"
+}
+
+function __execute_test_stage() {
+  local _testname="${1}" _stage_name="${2}" _attr_name="${3}" _label="${4}" _out="${5}"
+  local _result_json _ret _exit_code
+  _result_json="$("${_stage_name}_test" "${_testname}")"
+  _exit_code="${?}"
+  echo "${_result_json}" >"${_out}"
+  if [[ "${_exit_code}" == 0 ]]; then
+    _ret="$(echo "${_result_json}" | jq ".${_attr_name}")"
+    _exit_code="${_exit_code}"
+    if [[ "${_exit_code}" == 0 ]]; then
+      if [[ "${_ret}" == true ]]; then
+        echo true
+      elif [[ "${_ret}" == false ]]; then
+        echo false
+      else
+        abort "${_label} for test:'${_testname}' gave an invalid JSON: '${_result_json}'"
+      fi
+    else
+      abort "${_label} for test:'${_testname}' gave a mal-formed JSON: '${_result_json}'"
+    fi
+  else
+    abort "${_label} for test:'${_testname}' was failed with exit code: '${_exit_code}'"
+  fi
+  return 0
+}
+
+#   run
+#   passed
+#   skipped
+#   failed
+#   error
+#   tests[@]
+__run_each_test_dir="out"
+function run_each_test() {
+  local _testname="${1}" _testdir="${2}"
+  local _precheck_result_file _execution_result_file
+  message "RUNNING: '${1}'"
+  if [[ "${_testname}" == *.sh ]]; then
+    message "Test type: 'scripttest'"
+    source "$(dirname ${BASH_SOURCE[0]})/drivers/scripttest.rc"
+    __run_each_test_dir="${_testdir}/${_testname%.sh}"
+    function bud__directory_for_output() {
+      echo "${__run_each_test_dir}"
+    }
+    local _dir
+    _dir="$(bud__directory_for_output)"
+    mkdir -p "${_dir}"
+    touch "$(bud__file_for_exit_code)"
+    touch "$(bud__file_for_stdout)"
+    touch "$(bud__file_for_stderr)"
+    touch "$(bud__file_for_script)"
+    _precheck_result_file="${_dir}/precheck.txt"
+    _execution_result_file="${_dir}/execution.txt"
+    touch "${_precheck_result_file}"
+    touch "${_execution_result_file}"
+  else
+    message "Unsupported test type: '${_testname}'"
+    return 1
+  fi
+
+  local _test_result_json
+  local _precheck_result
+  _test_result_json="$(jq -ncrM --arg v "${_testname}" '{"name":$v}')"
+  _precheck_result="$(precheck_each_test "${_testname}" "${_precheck_result_file}")"
+  if [[ "${_precheck_result}" == true ]]; then
+    run=$((run + 1))
+    local _execution_result
+    _execution_result="$(execute_each_test "${_testname}" "${_execution_result_file}")"
+    if [[ "${_execution_result}" == true ]]; then
+      passed=$((passed + 1))
+    elif [[ "${_execution_result}" == false ]]; then
+      failed=$((failed + 1))
+    else
+      abort "RUNTIME ERROR: (execution)"
+    fi
+    local _execution_result_json
+    _execution_result_json="$(cat "${_execution_result_file}")"
+    _test_result_json="$(json_object_merge "${_execution_result_json}" "${_test_result_json}")"
+  elif [[ "${_precheck_result}" == false ]]; then
+    skipped=$((skipped + 1))
+    message "...IGNORED: '${1}'"
+  else
+    abort "RUNTIME ERROR: (precheck)"
+  fi
+  local _precheck_result_json
+  _precheck_result_json=$(cat "${_precheck_result_file}")
+  _test_result_json="$(json_object_merge "${_precheck_result_json}" "${_test_result_json}")"
+  test_results+=("${_test_result_json}")
+  message "...FINISHED: '${1}'"
+}
+
+function run_tests() {
+  local _test_rootdir="${1:?Test Root Directory is missing.}"
+  _test_rootdir="${_test_rootdir%/}"
+  local -a _tests
+  mapfile -t _tests < <(list_tests "${_test_rootdir}")
+  local passed=0 skipped=0 failed=0 error=0 run=0 numtests=0 test_results=()
+  local _i
+  numtests="${#_tests[@]}"
+  for _i in "${_tests[@]}"; do
+    run_each_test "${_i}" "${_test_rootdir}" || error=$((error + 1))
+  done
+  local _was_successful=false
+  [[ "${failed}" == 0 && "${error}" == 0 && "${#_tests[@]}" -gt 0 ]] && _was_successful=true
+  local _test_results_json
+  _test_results_json="$(
+    for _i in "${test_results[@]}"; do
+      echo "${_i}"
+    done | jq -s .
+  )"
+
+  local _ret
+  _ret="$(jq -ncrM \
+    --argjson was_successful "${_was_successful}" \
+    --argjson numtests "${numtests}" \
+    --argjson run "${run}" \
+    --argjson passed "${passed}" \
+    --argjson failed "${failed}" \
+    --argjson error "${error}" \
+    --argjson skipped "${skipped}" \
+    --argjson test_results "${_test_results_json}" \
+    '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
+  echo "${_ret}"
+
+  #  local _exit_code=1
+  #  print_message ".Test Report"
+  #  print_message "----"
+  #  if [[ ${#failed[@]} == 0 ]]; then
+  #    print_message "No test failed (total=${numtests}; numpassed=${numpassed}; skipped=${skipped})"
+  #    _exit_code=0
+  #  else
+  #    print_message "${#failed[@]} test(s) FAILED (total=${numtests}; numpassed=${numpassed}; run=${run}; skipped=${skipped})"
+  #    for i in "${failed[@]}"; do
+  #      print_message "  ${i}"
+  #    done
+  #  fi
+  #  print_message "----"
+  #  return "${_exit_code}"
+}
+
+run_tests "${@}"
