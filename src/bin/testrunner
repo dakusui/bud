@@ -13,12 +13,12 @@ function list_tests() {
 
 function precheck_each_test() {
   local _testname="${1}" _testdir="${2}" _out="${3}"
-  __execute_test_stage "${_testname}" "${_testdir}" "precheck" "precheck" "Precheck" "${_out}"
+  __execute_test_stage "${_testname}" "${_testdir}" "precheck" "precheck" "precheck" "${_out}"
 }
 
 function execute_each_test() {
   local _testname="${1}" _testdir="${2}" _out="${3}"
-  __execute_test_stage "${_testname}" "${_testdir}" "execute" "success" "Execution" "${_out}"
+  __execute_test_stage "${_testname}" "${_testdir}" "execute" "success" "execution" "${_out}"
 }
 
 function __execute_test_stage() {
@@ -28,25 +28,20 @@ function __execute_test_stage() {
   local _attr_name="${4}"  # .successful / .precheck
   local _label="${5}"      # execution / precheck
   local _out="${6}"
-  local _result_json _ret _exit_code
+  local _result_json _ret
   _result_json="$("${_stage_name}_test" "${_testname}" "${_testdir}")"
-  _exit_code="${?}"
-  echo "${_result_json}" >"${_out}"
-  if [[ "${_exit_code}" == 0 ]]; then
-    _ret="$(echo "${_result_json}" | jq ".report.result.${_attr_name}")"
-    _exit_code="${_exit_code}"
-    if [[ "${_exit_code}" == 0 ]]; then
-      if [[ "${_ret}" == true || "${_ret}" == false ]]; then
-        echo "${_result_json}"
-      else
-        jq -ncrM --arg v "${_result_json}" '{"report":{"'"${_label^}"'":false,"driverOutput":$v}}'
-      fi
-    else
-      jq -ncrM --arg v "${_result_json}" '{"report":{"'"${_label^}"'":false,"driverOutput":$v}}'
-    fi
+  if __is_valid "${_result_json}"; then
+    echo "${_result_json}"
   else
-    jq -ncrM --arg v "${_result_json}" '{"report":{"'"${_label^}"'":false,"driverOutput":$v}}'
+    jq -ncrM --arg v "${_result_json}" '{"report":{"result":{"'"${_label}"'":false},"driverOutput":$v}}'
   fi
+  return 0
+}
+
+function __is_valid() {
+  local _content="${1}"
+  echo "${_content}" | jq ".report.result.${_attr_name}" >& /dev/null || return 1
+  json_object_merge "${_content}" '{}' >& /dev/null || return 1
   return 0
 }
 
@@ -98,7 +93,7 @@ function run_each_test() {
     local _execution_result_json_boolean
     _execution_result_json_boolean="$(echo "${_execution_result}" | jq -crM '.report.result.success')"
     if [[ "${_execution_result_json_boolean}" != true ]]; then
-      _execution_result_json_boolean="$(jq -ncrM --arg v "${_execution_result_json_boolean}" '{"report":{"execution":false,"driverOutput":$v}}')"
+      _execution_result_json="$(jq -ncrM --arg v "${_execution_result_json_boolean}" '{"report":{"execution":false,"driverOutput":$v}}')"
     fi
     _test_result_json="$(json_object_merge "${_execution_result}" "${_test_result_json}")"
   fi
