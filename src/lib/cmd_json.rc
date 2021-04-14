@@ -164,7 +164,7 @@ function run_json_object() {
   mapfile -t _script < <(__bud__compose_script_from_json_object "${_json_object}")
   _shell="$(__bud__compose_shell_from_json_object "${_json_object}")"
 
-  mkdir -p "$(__bud__directory_for_output)"
+  mkdir -p "$(bud__directory_for_output)"
   local _i _exit_code
   for _i in "${_stdin[@]}"; do
     echo "${_i}"

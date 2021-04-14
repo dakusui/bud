@@ -5,7 +5,7 @@
 # In case unexpected error is detected, this function should exit with non-0
 # exit code and non-JSON data may be printed.
 function precheck_test() {
-  local _testname="${1}"
+  local _testname="${1}" _testdir="${2}"
   local _precheck=true
   if [[ "${_testname}" == ignore-* ]]; then
     _precheck=false
@@ -14,20 +14,19 @@ function precheck_test() {
 }
 
 function _execute_test() {
-  local _testname="${1}"
-  local _dir _exit_code
-  _dir="$(bud__directory_for_output)"
-  bash -eu -E "${_dir}/${_testname}" >"$(bud__file_for_stdout "${_dir}")" 2>"$(bud__file_for_stderr "${_dir}")"
+  local _testname="${1}" _testdir="${2}"
+  local _exit_code
+  cp "${_testdir}/${_testname}" "$(bud__file_for_script)"
+  bash -eu -E "${_testdir}/${_testname}" >"$(bud__file_for_stdout)" 2>"$(bud__file_for_stderr)"
   _exit_code="$?"
-  echo "${_exit_code}" >"$(bud__file_for_exit_code "${_dir}")"
-  cat "${_dir}/${_testname}" > "$(bud__file_for_script)"
+  echo "${_exit_code}" >"$(bud__file_for_exit_code)"
   return 0
 }
 
 function execute_test() {
-  local _testname="${1}"
-  _execute_test "${_testname}" || {
-    error "The test: '${_testname}' failed with an error."
+  local _testname="${1}" _testdir="${2}"
+  _execute_test "${_testname}" "${_testdir}" || {
+    error "The test: '${_testname}' failed with an error. (${_testdir})"
   }
 
   local _expectation_json

@@ -12,19 +12,24 @@ function list_tests() {
 }
 
 function precheck_each_test() {
-  local _testname="${1}" _out="${2}"
-  __execute_test_stage "${_testname}" "precheck" "precheck" "Precheck" "${_out}"
+  local _testname="${1}" _testdir="${2}" _out="${3}"
+  __execute_test_stage "${_testname}" "${_testdir}" "precheck" "precheck" "Precheck" "${_out}"
 }
 
 function execute_each_test() {
-  local _testname="${1}" _out="${2}"
-  __execute_test_stage "${_testname}" "execute" "success" "Execution" "${_out}"
+  local _testname="${1}" _testdir="${2}" _out="${3}"
+  __execute_test_stage "${_testname}" "${_testdir}" "execute" "success" "Execution" "${_out}"
 }
 
 function __execute_test_stage() {
-  local _testname="${1}" _stage_name="${2}" _attr_name="${3}" _label="${4}" _out="${5}"
+  local _testname="${1}"
+  local _testdir="${2}"
+  local _stage_name="${3}" # execute / precheck
+  local _attr_name="${4}"  # .successful / .precheck
+  local _label="${5}"      # Execution / Precheck
+  local _out="${6}"
   local _result_json _ret _exit_code
-  _result_json="$("${_stage_name}_test" "${_testname}")"
+  _result_json="$("${_stage_name}_test" "${_testname}" "${_testdir}")"
   _exit_code="${?}"
   echo "${_result_json}" >"${_out}"
   if [[ "${_exit_code}" == 0 ]]; then
@@ -84,11 +89,11 @@ function run_each_test() {
   local _test_result_json
   local _precheck_result
   _test_result_json="$(jq -ncrM --arg v "${_testname}" '{"name":$v}')"
-  _precheck_result="$(precheck_each_test "${_testname}" "${_precheck_result_file}")"
+  _precheck_result="$(precheck_each_test "${_testname}" "${_testdir}" "${_precheck_result_file}")"
   if [[ "${_precheck_result}" == true ]]; then
     run=$((run + 1))
     local _execution_result
-    _execution_result="$(execute_each_test "${_testname}" "${_execution_result_file}")"
+    _execution_result="$(execute_each_test "${_testname}" "${_testdir}" "${_execution_result_file}")"
     if [[ "${_execution_result}" == true ]]; then
       passed=$((passed + 1))
     elif [[ "${_execution_result}" == false ]]; then
