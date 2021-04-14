@@ -84,21 +84,21 @@ function run_each_test() {
   fi
 
   local _test_result_json
-  local _precheck_result _precheck_result_json='{}'
+  local _precheck_result _precheck_result_json_boolean='{}'
   _test_result_json="$(jq -ncrM --arg v "${_testname}" '{"name":$v}')"
   _precheck_result="$(precheck_each_test "${_testname}" "${_testdir}" "${_precheck_result_file}")"
   debug "_precheck_result: '${_precheck_result}'"
-  _precheck_result_json="$(echo "${_precheck_result}" | jq -crM '.report.result.precheck')"
-  debug "_precheck_result_json: '${_precheck_result_json}'"
-  if [[ "${_precheck_result_json}" == 'true' ]]; then
+  _precheck_result_json_boolean="$(echo "${_precheck_result}" | jq -crM '.report.result.precheck')"
+  debug "_precheck_result_json_boolean: '${_precheck_result_json_boolean}'"
+  if [[ "${_precheck_result_json_boolean}" == 'true' ]]; then
     local _execution_result
     debug "trying to execute: '${_testname}'"
     _execution_result="$(execute_each_test "${_testname}" "${_testdir}" "${_execution_result_file}")"
     debug "_execution_result: '${_execution_result}'"
-    local _execution_result_json
-    _execution_result_json="$(echo "${_execution_result}" | jq -crM '.report.result.success')"
-    if [[ "${_execution_result_json}" != true ]]; then
-      _execution_result_json="$(jq -ncrM --arg v "${_execution_result_json}" '{"report":{"execution":false,"driverOutput":$v}}')"
+    local _execution_result_json_boolean
+    _execution_result_json_boolean="$(echo "${_execution_result}" | jq -crM '.report.result.success')"
+    if [[ "${_execution_result_json_boolean}" != true ]]; then
+      _execution_result_json_boolean="$(jq -ncrM --arg v "${_execution_result_json_boolean}" '{"report":{"execution":false,"driverOutput":$v}}')"
     fi
     _test_result_json="$(json_object_merge "${_execution_result}" "${_test_result_json}")"
   fi
