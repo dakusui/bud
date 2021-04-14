@@ -62,7 +62,7 @@ __run_each_test_dir="out"
 function run_each_test() {
   local _testname="${1}" _testdir="${2}"
   local _precheck_result_file _execution_result_file
-  info "RUNNING: '${1}'"
+  info_begin "'${1}'"
   if [[ "${_testname}" == *.sh ]]; then
     info "Test type: 'scripttest'"
     source "$(dirname ${BASH_SOURCE[0]})/drivers/scripttest.rc"
@@ -113,7 +113,7 @@ function run_each_test() {
   _precheck_result_json=$(cat "${_precheck_result_file}")
   _test_result_json="$(json_object_merge "${_precheck_result_json}" "${_test_result_json}")"
   test_results+=("${_test_result_json}")
-  info "...FINISHED: '${1}'"
+  info_end "${1}"
 }
 
 function run_tests() {

@@ -163,9 +163,15 @@ function debug() {
     _caller="$(__bud__format_caller ${_caller})"
     message "DEBUG: ${_caller}:" "${@}"
     if [[ "${BUD_LOG_FILE}" != "" ]]; then
-      message "DEBUG: ${_caller}: " "${@}" 2>>"${BUD_LOG_FILE}"
+      message "DEBUG: ${_caller}: " "$(__bud__info_indent)" "${@}" 2>>"${BUD_LOG_FILE}"
     fi
   fi
+}
+
+__BUD__INFO_INDENT=0
+function info_begin() {
+  info "BEGIN:" "${@}"
+  __BUD__INFO_INDENT=$((__BUD__INFO_INDENT + 1))
 }
 
 function info() {
@@ -174,11 +180,20 @@ function info() {
     _caller="$(caller 0)"
     # shellcheck disable=SC2086
     _caller="$(__bud__format_caller ${_caller})"
-    message "INFO: ${_caller}: " "${@}"
+    message "INFO: ${_caller}: " "$(__bud__info_indent)" "${@}"
     if [[ "${BUD_LOG_FILE}" != "" ]]; then
       message "INFO: ${_caller}: " "${@}" 2>>"${BUD_LOG_FILE}"
     fi
   fi
+}
+
+function info_end() {
+  __BUD__INFO_INDENT=$((__BUD__INFO_INDENT - 1))
+  info "END:" "${@}"
+}
+
+function __bud__info_indent() {
+  printf "%$(("${__BUD__INFO_INDENT}" * 2))s" ""
 }
 
 function error() {
@@ -196,7 +211,7 @@ function error() {
 
 function __bud__format_caller() {
   local _line="${1:-???}" _function="${2:-unknown}" _file="${3:-unknown file}"
-  echo "${_file}:${_line} (${_function})"
+  printf "%-30s:%-4s (%-30s)" "${_file}" "${_line}" "${_function}"
 }
 
 ####
