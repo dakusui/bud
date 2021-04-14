@@ -33,6 +33,7 @@ function execute_test() {
   _expectation_json="$(__bud__compose_precheck_expectation_json)"
   _ret="$(__bud__verify_cmd_execution_result "${_expectation_json}")"
   _ret="$(echo "${_ret}" | jq -crM '{"report":{"result":.}}')"
+  debug "_ret: ${_ret}"
   _report="$(__bud__compose_execution_report)"
   _report="$(echo "${_report}" | jq -crM '{"report":{"execution":.}}')"
   _ret="$(json_object_merge "${_ret}" "${_report}")"

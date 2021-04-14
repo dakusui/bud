@@ -41,13 +41,13 @@ function __execute_test_stage() {
       elif [[ "${_ret}" == false ]]; then
         echo false
       else
-        abort "${_label} for test:'${_testname}' gave an invalid JSON: '${_result_json}'"
+        abort "DRIVER ERROR: ${_label} for test:'${_testname}' gave an invalid JSON: '${_result_json}'"
       fi
     else
-      abort "${_label} for test:'${_testname}' gave a mal-formed JSON: '${_result_json}'"
+      abort "DRIVER ERROR: ${_label} for test:'${_testname}' gave a mal-formed JSON: '${_result_json}'"
     fi
   else
-    abort "${_label} for test:'${_testname}' was failed with exit code: '${_exit_code}'"
+    abort "DRIVER ERROR: ${_label} for test:'${_testname}' was failed with exit code: '${_exit_code}'"
   fi
   return 0
 }
@@ -86,33 +86,27 @@ function run_each_test() {
   fi
 
   local _test_result_json
-  local _precheck_result
+  local _precheck_result _precheck_result_json='{}'
   _test_result_json="$(jq -ncrM --arg v "${_testname}" '{"name":$v}')"
   _precheck_result="$(precheck_each_test "${_testname}" "${_testdir}" "${_precheck_result_file}")"
-  if [[ "${_precheck_result}" == true ]]; then
-    run=$((run + 1))
+  debug "_precheck_result: '${_precheck_result}'"
+  _precheck_result_json=$(cat "${_precheck_result_file}")
+  if echo "${_precheck_result_json}" | jq . >&/dev/null; then
     local _execution_result
     _execution_result="$(execute_each_test "${_testname}" "${_testdir}" "${_execution_result_file}")"
-    if [[ "${_execution_result}" == true ]]; then
-      passed=$((passed + 1))
-    elif [[ "${_execution_result}" == false ]]; then
-      failed=$((failed + 1))
-    else
-      abort "RUNTIME ERROR: (execution)"
-    fi
+    debug "_execution_result: '${_execution_result}'"
     local _execution_result_json
     _execution_result_json="$(cat "${_execution_result_file}")"
+    if ! echo "${_execution_result_json}" | jq . >&/dev/null; then
+      _execution_result_json="$(jq -ncrM --arg v "${_execution_result_json}" '{"report":{"execution":false,"driverOutput":$v}}')"
+    fi
     _test_result_json="$(json_object_merge "${_execution_result_json}" "${_test_result_json}")"
-  elif [[ "${_precheck_result}" == false ]]; then
-    skipped=$((skipped + 1))
-    info "...IGNORED: '${1}'"
   else
-    abort "RUNTIME ERROR: (precheck)"
+    _precheck_result_json="$(jq -ncrM --arg v "${_precheck_result_json}" '{"report":{"precheck":false,"driverOutput":$v}}')"
   fi
-  local _precheck_result_json
-  _precheck_result_json=$(cat "${_precheck_result_file}")
+  debug "_test_result_json: '${_test_result_json}'"
   _test_result_json="$(json_object_merge "${_precheck_result_json}" "${_test_result_json}")"
-  test_results+=("${_test_result_json}")
+  echo "${_test_result_json}"
   info_end "${1}"
 }
 
@@ -124,8 +118,10 @@ function run_tests() {
   local passed=0 skipped=0 failed=0 error=0 run=0 numtests=0 test_results=()
   local _i
   numtests="${#_tests[@]}"
+  local _each_test_result_json
   for _i in "${_tests[@]}"; do
-    run_each_test "${_i}" "${_test_rootdir}" || error=$((error + 1))
+    _each_test_result_json="$(run_each_test "${_i}" "${_test_rootdir}")"
+    test_results+=("${_each_test_result_json}")
   done
   local _was_successful=false
   [[ "${failed}" == 0 && "${error}" == 0 && "${#_tests[@]}" -gt 0 ]] && _was_successful=true
