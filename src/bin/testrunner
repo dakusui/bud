@@ -122,6 +122,23 @@ function run_tests() {
   for _i in "${_tests[@]}"; do
     _each_test_result_json="$(run_each_test "${_i}" "${_test_rootdir}")"
     test_results+=("${_each_test_result_json}")
+    local _precheck _execution
+    _precheck="$(echo "${_each_test_result_json}" | jq '.report.result.precheck')"
+    if [[ "${_precheck}" == true ]]; then
+      run=$((run + 1))
+    elif [[ "${_precheck}" == false ]]; then
+      skipped=$((skipped + 1))
+    else
+      error=$((error + 1))
+    fi
+    _execution="$(echo "${_each_test_result_json}" | jq '.report.result.execution')"
+    if [[ "${_execution}" == true ]]; then
+      passed=$((passed + 1))
+    elif [[ "${_execution}" == false ]]; then
+      failed=$((failed + 1))
+    else
+      error=$((error + 1))
+    fi
   done
   local _was_successful=false
   [[ "${failed}" == 0 && "${error}" == 0 && "${#_tests[@]}" -gt 0 ]] && _was_successful=true
