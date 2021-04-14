@@ -10,7 +10,7 @@ function precheck_test() {
   if [[ "${_testname}" == ignore-* ]]; then
     _precheck=false
   fi
-  jq -ncrM --argjson v "${_precheck}" '{"precheck":$v}'
+  jq -ncrM --argjson v "${_precheck}" '{"report":{"result":{"precheck":$v}}}'
 }
 
 function _execute_test() {
@@ -29,7 +29,12 @@ function execute_test() {
     error "The test: '${_testname}' failed with an error. (${_testdir})"
   }
 
-  local _expectation_json
+  local _expectation_json _ret _report
   _expectation_json="$(__bud__compose_precheck_expectation_json)"
-  __bud__verify_cmd_execution_result "${_expectation_json}"
+  _ret="$(__bud__verify_cmd_execution_result "${_expectation_json}")"
+  _ret="$(echo "${_ret}" | jq -crM '{"report":{"result":.}}')"
+  _report="$(__bud__compose_execution_report)"
+  _report="$(echo "${_report}" | jq -crM '{"report":{"execution":.}}')"
+  _ret="$(json_object_merge "${_ret}" "${_report}")"
+  echo "${_ret}"
 }

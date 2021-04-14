@@ -33,7 +33,7 @@ function __execute_test_stage() {
   _exit_code="${?}"
   echo "${_result_json}" >"${_out}"
   if [[ "${_exit_code}" == 0 ]]; then
-    _ret="$(echo "${_result_json}" | jq ".${_attr_name}")"
+    _ret="$(echo "${_result_json}" | jq ".report.result.${_attr_name}")"
     _exit_code="${_exit_code}"
     if [[ "${_exit_code}" == 0 ]]; then
       if [[ "${_ret}" == true ]]; then
@@ -62,9 +62,9 @@ __run_each_test_dir="out"
 function run_each_test() {
   local _testname="${1}" _testdir="${2}"
   local _precheck_result_file _execution_result_file
-  message "RUNNING: '${1}'"
+  info "RUNNING: '${1}'"
   if [[ "${_testname}" == *.sh ]]; then
-    message "Test type: 'scripttest'"
+    info "Test type: 'scripttest'"
     source "$(dirname ${BASH_SOURCE[0]})/drivers/scripttest.rc"
     __run_each_test_dir="${_testdir}/${_testname%.sh}"
     function bud__directory_for_output() {
@@ -82,8 +82,7 @@ function run_each_test() {
     touch "${_precheck_result_file}"
     touch "${_execution_result_file}"
   else
-    message "Unsupported test type: '${_testname}'"
-    return 1
+    abort "Unsupported test type: '${_testname}'"
   fi
 
   local _test_result_json
@@ -106,7 +105,7 @@ function run_each_test() {
     _test_result_json="$(json_object_merge "${_execution_result_json}" "${_test_result_json}")"
   elif [[ "${_precheck_result}" == false ]]; then
     skipped=$((skipped + 1))
-    message "...IGNORED: '${1}'"
+    info "...IGNORED: '${1}'"
   else
     abort "RUNTIME ERROR: (precheck)"
   fi
@@ -114,7 +113,7 @@ function run_each_test() {
   _precheck_result_json=$(cat "${_precheck_result_file}")
   _test_result_json="$(json_object_merge "${_precheck_result_json}" "${_test_result_json}")"
   test_results+=("${_test_result_json}")
-  message "...FINISHED: '${1}'"
+  info "...FINISHED: '${1}'"
 }
 
 function run_tests() {
@@ -149,21 +148,6 @@ function run_tests() {
     --argjson test_results "${_test_results_json}" \
     '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
   echo "${_ret}"
-
-  #  local _exit_code=1
-  #  print_message ".Test Report"
-  #  print_message "----"
-  #  if [[ ${#failed[@]} == 0 ]]; then
-  #    print_message "No test failed (total=${numtests}; numpassed=${numpassed}; skipped=${skipped})"
-  #    _exit_code=0
-  #  else
-  #    print_message "${#failed[@]} test(s) FAILED (total=${numtests}; numpassed=${numpassed}; run=${run}; skipped=${skipped})"
-  #    for i in "${failed[@]}"; do
-  #      print_message "  ${i}"
-  #    done
-  #  fi
-  #  print_message "----"
-  #  return "${_exit_code}"
 }
 
 run_tests "${@}"
