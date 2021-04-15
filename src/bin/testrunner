@@ -31,7 +31,7 @@ function __execute_test_stage() {
   local _result_json _ret
   info_begin "__execute_test_stage: ${_stage_name}: (${_testname})"
   _result_json="$("${_stage_name}_test" "${_testname}" "${_testdir}" 2>"${_errout}")" || {
-    error "DRIVER ERROR DETECTED: '${_stage_name}_test' in $(test_driver_name)"
+    _error "DRIVER ERROR DETECTED: '${_stage_name}_test' in $(test_driver_name)"
   }
   debug "_result_json: '${_result_json}'"
   if (__is_valid "${_result_json}" "${_attr_name}"); then
@@ -50,22 +50,20 @@ function __execute_test_stage() {
 function __is_valid() {
   local _content="${1}" _attr_name="${2}"
   local _exit_code=0
-  info_begin "_attr_name: '${_attr_name}'"
   (echo "${_content}" | jq ".report.result.${_attr_name}") >&/dev/null || {
     _exit_code=1
   }
   json_object_merge "${_content}" '{}' >&/dev/null || {
     _exit_code=1
   }
-  info_end "_attr_name: '${_attr_name}'"
   return "${_exit_code}"
 }
 
-#   run
-#   passed
-#   skipped
-#   failed
-#   error
+#   _run
+#   _passed
+#   _skipped
+#   _failed
+#   _error
 #   tests[@]
 __run_each_test_dir="out"
 __run_each_test_test_driver_name="unknown"
@@ -140,36 +138,37 @@ function run_tests() {
   local _test_reportdir="${3:-${_test_rootdir}}"
   _test_rootdir="${_test_rootdir%/}"
   local -a _tests
-  mapfile -t _tests < <(list_tests "${_test_rootdir}" | grep -E "${_test_filter}")
-  local passed=0 skipped=0 failed=0 error=0 run=0 numtests=0 test_results=()
+  mapfile -t _tests < <(list_tests "${_test_rootdir}" | grep -E "${_test_filter}" || abort "Failed to list tests in directory:'${_test_rootdir}' with filter: '${_test_filter}'")
+  [[ "${#_tests[@]}" -gt 0 ]] || abort "No available tests.: (directory: '${_test_rootdir}', filter: '${_test_filter}')"
+  local _passed=0 _skipped=0 _failed=0 _error=0 _run=0 _numtests=0 _test_results=()
   local _i
-  numtests="${#_tests[@]}"
+  _numtests="${#_tests[@]}"
   for _i in "${_tests[@]}"; do
     _each_test_result_content="$(run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}")" || :
-    test_results+=("${_each_test_result_content}")
+    _test_results+=("${_each_test_result_content}")
     local _precheck _execution
     _precheck="$(echo "${_each_test_result_content}" | jq '.report.result.precheck')"
     if [[ "${_precheck}" == true ]]; then
-      run=$((run + 1))
+      _run=$((_run + 1))
       _execution="$(echo "${_each_test_result_content}" | jq '.report.result.success')"
       if [[ "${_execution}" == true ]]; then
-        passed=$((passed + 1))
+        _passed=$((_passed + 1))
       elif [[ "${_execution}" == false ]]; then
-        failed=$((failed + 1))
+        _failed=$((_failed + 1))
       else
-        error=$((error + 1))
+        _error=$((_error + 1))
       fi
     elif [[ "${_precheck}" == false ]]; then
-      skipped=$((skipped + 1))
+      _skipped=$((_skipped + 1))
     else
-      error=$((error + 1))
+      _error=$((_error + 1))
     fi
   done
   local _was_successful=false
-  [[ "${failed}" == 0 && "${error}" == 0 && "${#_tests[@]}" -gt 0 ]] && _was_successful=true
+  [[ "${_failed}" == 0 && "${_error}" == 0 && "${#_tests[@]}" -gt 0 ]] && _was_successful=true
   local _test_results_json
   _test_results_json="$(
-    for _i in "${test_results[@]}"; do
+    for _i in "${_test_results[@]}"; do
       echo "${_i}"
     done | jq -s .
   )"
@@ -177,14 +176,14 @@ function run_tests() {
   local _ret
   _ret="$(jq -ncrM \
     --argjson was_successful "${_was_successful}" \
-    --argjson numtests "${numtests}" \
-    --argjson run "${run}" \
-    --argjson passed "${passed}" \
-    --argjson failed "${failed}" \
-    --argjson error "${error}" \
-    --argjson skipped "${skipped}" \
-    --argjson test_results "${_test_results_json}" \
-    '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
+    --argjson _numtests "${_numtests}" \
+    --argjson _run "${_run}" \
+    --argjson _passed "${_passed}" \
+    --argjson _failed "${_failed}" \
+    --argjson _error "${_error}" \
+    --argjson _skipped "${_skipped}" \
+    --argjson _test_results "${_test_results_json}" \
+    '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$_numtests,"_run":$_run,"_skipped":$_skipped,"_passed":$_passed,"_failed":$_failed,"_error":$_error},"_test_results":$_test_results}}')"
   echo "${_ret}"
 }
 
