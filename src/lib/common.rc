@@ -170,6 +170,7 @@ function debug() {
 
 __BUD__INFO_INDENT=0
 function info_begin() {
+  local __bud__stack_offset=1
   info "BEGIN:" "${@}"
   __BUD__INFO_INDENT=$((__BUD__INFO_INDENT + 1))
 }
@@ -177,7 +178,7 @@ function info_begin() {
 function info() {
   if [[ "${BUD_INFO:-enabled}" == "enabled" ]]; then
     local _caller
-    _caller="$(caller 0)"
+    _caller="$(caller "${__bud__stack_offset:-0}")"
     # shellcheck disable=SC2086
     _caller="$(__bud__format_caller ${_caller})"
     message "INFO:  ${_caller}: $(__bud__info_indent)" "${@}"
@@ -188,6 +189,7 @@ function info() {
 }
 
 function info_end() {
+  local __bud__stack_offset=1
   __BUD__INFO_INDENT=$((__BUD__INFO_INDENT - 1))
   info "END:" "${@}"
 }
