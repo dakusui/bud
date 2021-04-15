@@ -76,30 +76,43 @@ function run_each_test() {
   if [[ "${_testname}" == *.sh ]]; then
     info "Test type: 'scripttest'"
     __run_each_test_test_driver_name="${BUD_LIB}/testdrivers/scripttest.rc"
-    # shellcheck disable=SC1090
-    source "${__run_each_test_test_driver_name}"
-    __run_each_test_dir="${_testdir}/${_testname%.sh}-output"
-    function bud__directory_for_output() {
-      echo "${__run_each_test_dir}"
-    }
-
-    function test_driver_name() {
-      echo "${__run_each_test_test_driver_name}"
-    }
-    local _dir
-    _dir="$(bud__directory_for_output)"
-    mkdir -p "${_dir}"
-    touch "$(bud__file_for_exit_code)"
-    touch "$(bud__file_for_stdout)"
-    touch "$(bud__file_for_stderr)"
-    touch "$(bud__file_for_script)"
-    _precheck_result_file="${_dir}/precheck.txt"
-    _execution_result_file="${_dir}/execution.txt"
-    touch "${_precheck_result_file}"
-    touch "${_execution_result_file}"
+  elif [[ "${_testname}" == *.json ]]; then
+    local _content _test_type
+    _content=$(cat "${_testdir}/${_testname}")
+    _test_type="$(echo "${_content}" | jq -crM '.type')"
+    info "Test type: 'JSON:${_test_type}'"
+    __run_each_test_test_driver_name="${BUD_LIB}/testdrivers/json_${_test_type}.rc"
   else
     abort "Unsupported test type: '${_testname}'"
   fi
+
+  ####
+  info_begin "Loading: '${__run_each_test_test_driver_name}'"
+  # shellcheck disable=SC1090
+  source "${__run_each_test_test_driver_name}"
+  local _exit_code=$?
+  [[ ${_exit_code} == 0 ]] || abort "Failed to load a test driver: '${__run_each_test_test_driver_name}'"
+  info_end "Loaded: exit_code: '${_exit_code}'"
+  __run_each_test_dir="${_testdir}/${_testname%.sh}-output"
+  function bud__directory_for_output() {
+    echo "${__run_each_test_dir}"
+  }
+
+  function test_driver_name() {
+    echo "${__run_each_test_test_driver_name}"
+  }
+  local _dir
+  _dir="$(bud__directory_for_output)"
+  mkdir -p "${_dir}"
+  touch "$(bud__file_for_exit_code)"
+  touch "$(bud__file_for_stdout)"
+  touch "$(bud__file_for_stderr)"
+  touch "$(bud__file_for_script)"
+  _precheck_result_file="${_dir}/precheck.txt"
+  _execution_result_file="${_dir}/execution.txt"
+  touch "${_precheck_result_file}"
+  touch "${_execution_result_file}"
+  ####
 
   local _test_result_json
   local _precheck_result _precheck_result_json_boolean='{}'
@@ -123,9 +136,10 @@ function run_each_test() {
 
 function run_tests() {
   local _test_rootdir="${1:?Test Root Directory is missing.}"
+  local _test_filter="${2:-.*}"
   _test_rootdir="${_test_rootdir%/}"
   local -a _tests
-  mapfile -t _tests < <(list_tests "${_test_rootdir}")
+  mapfile -t _tests < <(list_tests "${_test_rootdir}" | grep -E "${_test_filter}")
   local passed=0 skipped=0 failed=0 error=0 run=0 numtests=0 test_results=()
   local _i
   numtests="${#_tests[@]}"

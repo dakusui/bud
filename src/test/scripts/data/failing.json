@@ -34,7 +34,7 @@
       ]
     },
     "source": [
-      "lib/common.rc"
+      "$BUD_LIB/common.rc"
     ],
     "cmd": "echo",
     "args": [

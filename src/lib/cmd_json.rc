@@ -91,7 +91,8 @@ function __bud__compose_script_from_json_object() {
   # Print source directives to "include" files
   mapfile -t _source_files < <(__bud__get_source_from_json_object "${_json_object}")
   for _i in "${_source_files[@]}"; do
-    echo "source " "$(quote "${_i}" | tee tmp.txt | envsubst "${_shell_format}" | tee tmp2.txt)"
+    debug "_i: '${_i}'"
+    echo "source " "$(quote "${_i}" | envsubst "${_shell_format}")"
   done
 
   # Print an empty line for readability
@@ -102,10 +103,10 @@ function __bud__compose_script_from_json_object() {
 }
 
 function envsubst_variables() {
-  echo "EXEC_BASEDIR"
-  echo "LIBDIR"
-  echo "TESTDIR"
-  echo "TESTREPORTDIR"
+  echo "BUD_LIB"
+  echo "BUD_TEST_SRCDIR"
+  echo "BUD_TEST_BASEDIR"
+  echo "BUD_TEST_REPORTDIR"
 }
 
 function bud__file_for_exit_code() {
