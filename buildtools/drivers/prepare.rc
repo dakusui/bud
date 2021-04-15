@@ -1,4 +1,4 @@
-function execute_prepare() {
+function execute_stage() {
   mkdir -p "${OUTDIR}"
   cp -r "${SRCDIR}/"* "${OUTDIR}/"
 }

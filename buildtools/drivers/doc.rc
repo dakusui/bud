@@ -1,4 +1,4 @@
-function execute_doc() {
+function execute_stage() {
   local i
   message "Preparing a directory for documents: '${DOCDIR}'"
 

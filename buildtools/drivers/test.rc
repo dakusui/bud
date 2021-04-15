@@ -1,0 +1,4 @@
+function execute_stage() {
+  mkdir -p "${TESTREPORTDIR}"
+  "${SRCDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" > "${TESTREPORTDIR}/testreport.json"
+}

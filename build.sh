@@ -5,15 +5,21 @@ shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/utils.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/build_info.rc"
-source "$(dirname "${BASH_SOURCE[0]}")/buildtools/drivers.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/jq-front.rc"
 
-function execute_stage() {
+__execute_stage_driver_filename=
+function __execute_stage() {
   local _stage="${1}"
   shift
   message "EXECUTING:${_stage}..."
   {
-    "execute_${_stage}" "$@" && message "DONE:${_stage}"
+    __execute_stage_driver_filename="$(dirname "${BASH_SOURCE[0]}")/buildtools/drivers/${_stage}.rc"
+    function execute_stage() {
+      abort "The driver: '${__execute_stage_driver_filename}' does not define a function 'execute_stage'"
+    }
+    # shellcheck disable=SC1090
+    source "${__execute_stage_driver_filename}"
+    "execute_stage" "$@" && message "DONE:${_stage}"
   } || {
     message "FAILED:${_stage}"
     return 1
@@ -23,11 +29,15 @@ function execute_stage() {
 
 function main() {
   if [[ $# == 0 ]]; then
-    main doc test
+    main clean prepare doc test
     return 0
   fi
   if [[ ${1} == DOC ]]; then
     main clean prepare doc
+    return 0
+  fi
+  if [[ ${1} == TEST ]]; then
+    main clean prepare test
     return 0
   fi
 
@@ -36,7 +46,7 @@ function main() {
   for i in "${_stages[@]}"; do
     local _args
     IFS=':' read -r -a _args <<<"${i}"
-    execute_stage "${_args[@]}" || exit 1
+    __execute_stage "${_args[@]}" || exit 1
   done
 }
 
