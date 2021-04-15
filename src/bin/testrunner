@@ -41,7 +41,7 @@ function __execute_test_stage() {
     debug "not valid"
     local _err
     _err="$(cat "${_errout}")"
-    jq -ncrM --arg v "${_result_json}" --arg w "${_err}" '{"report":{"result":{"'"${_label}"'":false},"driverOutput":{"stdout":$v,"stderr":$w}}}'
+    jq -ncrM --arg v "${_result_json}" --arg w "${_err}" '{"report":{"result":{"'"${_label}"'":null},"driverOutput":{"stdout":$v,"stderr":$w}}}'
   fi
   info_end "__execute_test_stage: ${_stage_name}: (${_testname})"
   return 0

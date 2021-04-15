@@ -10,7 +10,7 @@ function precheck_test() {
   if [[ "${_testname}" == ignore-* ]]; then
     _precheck=false
   fi
-  jq -ncrM --argjson v "${_precheck}" '{"report":{"result":{"precheck":$v}}}X'
+  jq -ncrM --argjson v "${_precheck}" '{"report":{"result":{"precheck":$v}}}'
 }
 
 function _execute_test() {
