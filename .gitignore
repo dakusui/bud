@@ -3,4 +3,4 @@ out/
 .idea/
 doc/
 /?/
-*-testoutput/
+*-output/
