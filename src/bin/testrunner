@@ -78,7 +78,7 @@ function run_each_test() {
     __run_each_test_test_driver_name="${BUD_LIB}/testdrivers/scripttest.rc"
     # shellcheck disable=SC1090
     source "${__run_each_test_test_driver_name}"
-    __run_each_test_dir="${_testdir}/${_testname%.sh}"
+    __run_each_test_dir="${_testdir}/${_testname%.sh}-testoutput"
     function bud__directory_for_output() {
       echo "${__run_each_test_dir}"
     }
