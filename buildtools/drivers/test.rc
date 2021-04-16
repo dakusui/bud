@@ -5,52 +5,83 @@ function execute_stage() {
   "${SRCDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" | jq . >"${_report_file}"
 
   _report_json=$(jq . "${_report_file}")
-  __compose_test_report "${_report_json}"
+  __print_test_report "${_report_json}" >&2
 }
 
-function __compose_test_report() {
+function __print_test_report() {
   local _json_object="${1}"
-  __print ".Test Report"
-  __print "----"
-  __print_attr "passed" "${_json_object}"
-  __print_attr "skipped" "${_json_object}"
-  __print_attr "failed" "${_json_object}"
-  __print_attr "error" "${_json_object}"
-  __print_attr "run" "${_json_object}"
-  __print_attr "all" "${_json_object}"
-  __print "----"
-  __print ".Failures (Failed in Execution)"
-  __print "----"
-  __json_value_at '.report.test_results[] |
-  select(.report.result.success == false) |
-  .name' "${_json_object}" | sed -E 's/^/  /'>&2
-  __print "----"
-  __print ".Errors"
-  __print "----"
-  __json_value_at '.report.test_results[] |
-  select(
-    (.report.result.success != false and .report.result.success != true) or
-    (.report.result.precheck != false and .report.result.precheck != true)) |
-  .name' "${_json_object}" | sed -E 's/^/  /'>&2
-  __print "----"
-  __print ".Skipped"
-  __print "----"
-  __json_value_at '.report.test_results[] |
-  select(.report.result.precheck == false) |
-  .name' "${_json_object}" | sed -E 's/^/  /'>&2
-  __print "----"
+  echo ".Test Report"
+  echo "----"
+  __get_report_attr "passed" "${_json_object}"
+  __get_report_attr "skipped" "${_json_object}"
+  __get_report_attr "failed" "${_json_object}"
+  __get_report_attr "error" "${_json_object}"
+  __get_report_attr "run" "${_json_object}"
+  __get_report_attr "all" "${_json_object}"
+  echo ""
+  echo "----"
+  echo ""
+  echo ".Failures (Failed in Execution)"
+  echo "----"
+  __failed_test_names "${_json_object}"
+  echo "----"
+  echo ""
+  echo ".Errors"
+  echo "----"
+  __error_test_names "${_json_object}"
+  echo "----"
+  echo ""
+  echo ".Skipped"
+  echo "----"
+  __skipped_test_names "${_json_object}"
+  echo "----"
 }
 
-function __print_attr() {
+function __failed_test_names() {
+  local _json_object="${1}"
+  local _test_names
+  mapfile -t _test_names < <(__extract_test_names 'select(.report.result.success == false)' "${_json_object}")
+  __format_test_names "${_test_names[@]}"
+}
+
+function __error_test_names() {
+  local _json_object="${1}"
+  local _test_names
+  mapfile -t _test_names < <(__extract_test_names \
+    'select((.report.result.success != false and .report.result.success != true) or (.report.result.precheck != false and .report.result.precheck != true))' "${_json_object}")
+  __format_test_names "${_test_names[@]}"
+}
+
+function __skipped_test_names() {
+  local _json_object="${1}"
+  local _test_names
+  mapfile -t _test_names < <(__extract_test_names 'select(.report.result.precheck == false)' "${_json_object}")
+  __format_test_names "${_test_names[@]}"
+}
+
+function __extract_test_names() {
+  local _query="${1}" _json_object="${2}"
+  __json_value_at '.report.test_results[] | '"${_query}"' | .name' "${_json_object}"
+}
+
+function __format_test_names() {
+  local _i
+  (
+    if [[ ${#} == 0 ]]; then
+      echo "None."
+    fi
+    for _i in "${@}"; do
+      echo "${_i}"
+    done
+  ) | sed -E 's/^/  /'
+}
+
+function __get_report_attr() {
   local _attr="${1}" _json="${2}"
-  __print "$(printf '%9s' "${_attr^^}:" "$(__json_value_at ".report.summary.${_attr}" "${_json_object}")")"
+  printf '%8s:%6s\n' "${_attr^^}" "$(__json_value_at ".report.summary.${_attr}" "${_json_object}")"
 }
 
 function __json_value_at() {
   local _path="${1}" _json="${2}"
   echo "${_json}" | jq -crM "${_path}"
-}
-
-function __print() {
-  echo "${*}" >&2
 }
