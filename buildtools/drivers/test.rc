@@ -1,4 +1,56 @@
 function execute_stage() {
+  local _report_json _report_file
   mkdir -p "${TESTREPORTDIR}"
-  "${SRCDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" > "${TESTREPORTDIR}/testreport.json"
+  _report_file="${TESTREPORTDIR}/testreport.json"
+  "${SRCDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" | jq . >"${_report_file}"
+
+  _report_json=$(jq . "${_report_file}")
+  __compose_test_report "${_report_json}"
+}
+
+function __compose_test_report() {
+  local _json_object="${1}"
+  __print ".Test Report"
+  __print "----"
+  __print_attr "passed" "${_json_object}"
+  __print_attr "skipped" "${_json_object}"
+  __print_attr "failed" "${_json_object}"
+  __print_attr "error" "${_json_object}"
+  __print_attr "run" "${_json_object}"
+  __print_attr "all" "${_json_object}"
+  __print "----"
+  __print ".Failures (Failed in Execution)"
+  __print "----"
+  __json_value_at '.report.test_results[] |
+  select(.report.result.success == false) |
+  .name' "${_json_object}" | sed -E 's/^/  /'>&2
+  __print "----"
+  __print ".Errors"
+  __print "----"
+  __json_value_at '.report.test_results[] |
+  select(
+    (.report.result.success != false and .report.result.success != true) or
+    (.report.result.precheck != false and .report.result.precheck != true)) |
+  .name' "${_json_object}" | sed -E 's/^/  /'>&2
+  __print "----"
+  __print ".Skipped"
+  __print "----"
+  __json_value_at '.report.test_results[] |
+  select(.report.result.precheck == false) |
+  .name' "${_json_object}" | sed -E 's/^/  /'>&2
+  __print "----"
+}
+
+function __print_attr() {
+  local _attr="${1}" _json="${2}"
+  __print "$(printf '%9s' "${_attr^^}:" "$(__json_value_at ".report.summary.${_attr}" "${_json_object}")")"
+}
+
+function __json_value_at() {
+  local _path="${1}" _json="${2}"
+  echo "${_json}" | jq -crM "${_path}"
+}
+
+function __print() {
+  echo "${*}" >&2
 }

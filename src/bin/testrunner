@@ -176,14 +176,14 @@ function run_tests() {
   local _ret
   _ret="$(jq -ncrM \
     --argjson was_successful "${_was_successful}" \
-    --argjson _numtests "${_numtests}" \
-    --argjson _run "${_run}" \
-    --argjson _passed "${_passed}" \
-    --argjson _failed "${_failed}" \
-    --argjson _error "${_error}" \
-    --argjson _skipped "${_skipped}" \
-    --argjson _test_results "${_test_results_json}" \
-    '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$_numtests,"_run":$_run,"_skipped":$_skipped,"_passed":$_passed,"_failed":$_failed,"_error":$_error},"_test_results":$_test_results}}')"
+    --argjson numtests "${_numtests}" \
+    --argjson run "${_run}" \
+    --argjson passed "${_passed}" \
+    --argjson failed "${_failed}" \
+    --argjson error "${_error}" \
+    --argjson skipped "${_skipped}" \
+    --argjson test_results "${_test_results_json}" \
+    '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
   echo "${_ret}"
 }
 
