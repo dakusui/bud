@@ -1,7 +1,16 @@
 function execute_stage() {
   local _source_files _i
-  mapfile -t _source_files < <(find "${TESTDIR}" -name '*.json++')
+  mapfile -t _source_files < <(find "${TESTDIR}" -name '*.yaml++')
+  for _i in "${_source_files[@]}"; do
+    yaml2json "${_i}" >"${_i%.yaml++}.json++"
+  done
 
+  mapfile -t _source_files < <(find "${TESTDIR}" -name '*.yaml')
+  for _i in "${_source_files[@]}"; do
+    yaml2json "${_i}" >"${_i%.yaml}.json"
+  done
+
+  mapfile -t _source_files < <(find "${TESTDIR}" -name '*.json++')
   export JF_PATH="${TESTDIR}"
   for _i in "${_source_files[@]}"; do
     jq-front "${_i}" >"${_i%++}"
