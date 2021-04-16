@@ -4,24 +4,24 @@ readonly __BUILD__JQ_FRONT_RC=true
 source "$(dirname "${BASH_SOURCE[0]}")/cm.rc"
 
 function jq-front() {
-    exec-container "$(container_name)" "${@}"
+  exec-container "$(container_name)" "${@}"
 }
 
 ####
 # BEGIN: User provided functions
 readonly _JQ_FRONT_VERSION="v0.43"
 function start_container() {
-    local _container_name="${1}"
-	   # shellcheck disable=SC2140
-    docker run -d --name "${_container_name}" \
-	   --entrypoint=/bin/bash \
-	   --rm -i \
-	   -v "$(pwd)":"/var/lib/jf$(pwd)" \
-	   -e JF_PATH_BASE="/var/lib/jf" \
-	   -e JF_PATH="${JF_PATH}" \
-	   -e JF_DEBUG="${JF_DEBUG:-disabled}" \
-	   -e JF_CWD="$(pwd)" \
-	   dakusui/jq-front:"${JF_DOCKER_TAG:-${_JQ_FRONT_VERSION}}"
+  local _container_name="${1}"
+  # shellcheck disable=SC2140
+  docker run -d --name "${_container_name}" \
+    --entrypoint=/bin/bash \
+    --rm -i \
+    -v "$(pwd)":"/var/lib/jf$(pwd)" \
+    -e JF_PATH_BASE="/var/lib/jf" \
+    -e JF_PATH="${JF_PATH}" \
+    -e JF_DEBUG="${JF_DEBUG:-disabled}" \
+    -e JF_CWD="$(pwd)" \
+    dakusui/jq-front:"${JF_DOCKER_TAG:-${_JQ_FRONT_VERSION}}" >&2
 }
 
 # Should print environment variables and their values, which should be respected when your application is run.
@@ -29,16 +29,16 @@ function start_container() {
 # JF_PATH=/path/to/some/where:/somewhere/else
 # PATH=/path/to/promised/land
 function runtime_envvars() {
-    printf '%s=%s\n' JF_PATH "${JF_PATH}"
+  printf '%s=%s\n' JF_PATH "${JF_PATH}"
 }
 
 # Should print the name of the command to be "exec"ed in the docker image.
 function command_name() {
-    echo "/app/jq-front"
+  echo "/app/jq-front"
 }
 
 function container_name() {
-    echo "docker-based-jqfront-${USER}"
+  echo "docker-based-jqfront-${USER}"
 }
 
 # END

@@ -37,7 +37,7 @@ function main() {
     return 0
   fi
   if [[ ${1} == TEST ]]; then
-    main clean prepare test
+    main clean prepare test-compile test
     return 0
   fi
 
