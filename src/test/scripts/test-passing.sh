@@ -1,5 +1,4 @@
-source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/testenvvars.rc"
-source "${LIBDIR}/bud.rc"
+source "${BUD_LIB}/bud.rc"
 
 export BUD_DEBUG=enabled
 

@@ -8,7 +8,8 @@ function list_tests() {
   local _test_rootdir="${1%/}"
   find "${_test_rootdir}" -name '*.json' -or -name '*.sh' |
     grep -E '(test-.+|.*-test|test)(\.sh|\.json)' |
-    sed -r 's!'"${_test_rootdir}/"'!!'
+    sed -r 's!'"${_test_rootdir}/"'!!' |
+    sort
 }
 
 function precheck_each_test() {
