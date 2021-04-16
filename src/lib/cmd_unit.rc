@@ -7,11 +7,11 @@ function run_test_json() {
   local _json_object="${1}"
   local _precheck_result _precheck
   bud_trap
-  _precheck_result="$(__bud__precheck_test_json "${_json_object}")"
+  _precheck_result="$(precheck_test_json "${_json_object}")"
   _precheck="$(json_value_at '.report.result.precheck' "${_precheck_result}")"
   local _execution_result="{}"
   if [[ "${_precheck}" == true ]]; then
-    _execution_result="$(__bud__execute_test_json "${_json_object}")"
+    _execution_result="$(execute_test_json "${_json_object}")"
   fi
   local _ret="${_json_object}"
   _ret="$(json_object_merge "${_ret}" "${_precheck_result}")"
@@ -19,7 +19,7 @@ function run_test_json() {
   echo "${_ret}"
 }
 
-function __bud__precheck_test_json() {
+function precheck_test_json() {
   local _json_object="${1}"
   local _cmd_json
   debug "begin precheck"
@@ -51,7 +51,7 @@ function __bud__compose_precheck_expectation_json() {
   echo "${_ret}"
 }
 
-function __bud__execute_test_json() {
+function execute_test_json() {
   local _json_object="${1}"
   local _cmd_json
   _cmd_json="$(json_value_at '.when' "${_json_object}")"

@@ -4,7 +4,7 @@ function precheck_test() {
 
   _json_object="$(cat "${_testdir}/${_testname}" | jq -crM .)"
 
-  __bud__precheck_test_json "${_json_object}"
+  precheck_test_json "${_json_object}"
 }
 
 function execute_test() {
@@ -13,5 +13,5 @@ function execute_test() {
 
   _json_object="$(cat "${_testdir}/${_testname}" | jq -crM .)"
 
-  __bud__execute_test_json "${_json_object}"
+  execute_test_json "${_json_object}"
 }
