@@ -29,19 +29,19 @@ function precheck_test_json() {
   debug "check-2"
   local _expectation
   _expectation="$(__bud__compose_precheck_expectation_json)"
-  debug "check-3"
+  debug "check-3: _expectation: '${_expectation}'"
   local _result _precheck_preport _ret
   _result="$(__bud__verify_cmd_execution_result "${_expectation}")"
-  debug "check-4"
+  debug "check-4: _result: '${_result}'"
   _result="$(echo "${_result}" | jq '.success|{"precheck": .}' | jq -crM '{"report":{"result": .}}')"
-  debug "check-5"
+  debug "check-5: _result: '${_result}'"
   _precheck_preport="$(__bud__compose_execution_report)"
   _precheck_preport="$(echo "${_precheck_preport}" | jq -crM '{"report":{"precheck": .}}')"
   _ret="{}"
   _ret="$(json_object_merge "${_ret}" "${_result}")"
   _ret="$(json_object_merge "${_ret}" "${_precheck_preport}")"
   echo "${_ret}"
-  debug "end precheck"
+  debug "end precheck: _ret: '${_ret}'"
 }
 
 function __bud__compose_precheck_expectation_json() {
@@ -74,7 +74,9 @@ function __bud__verify_cmd_execution_result() {
   local _json_object="${1}"
 
   local _exit_code_messages _exit_code_messages_json _exit_code_successful=false
-  mapfile -t _exit_code_messages < <(__bud__verify_exit_code "${_json_object}")
+  _exit_code_messages="$(__bud__verify_exit_code "${_json_object}")"
+  [[ $? == 0 ]] || abort "${_exit_code_messages}"
+  IFS=$'\n' read -r -a _exit_code_messages <<< "${_exit_code_messages}"
   _exit_code_messages_json="$(to_json_array "${_exit_code_messages[@]}")"
   [[ "${#_exit_code_messages[@]}" == 0 ]] && _exit_code_successful=true
 
@@ -121,7 +123,6 @@ function __bud__compose_cmd_execution_result() {
 function __bud__compose_execution_report() {
   local _script _exit_code _stdout _stderr
   local _script_json _exit_code_json _stdout _stderr_json
-
   mapfile -t _script < <(cat "$(bud__file_for_script)")
   _script_json="$(to_json_array "${_script[@]}")"
   mapfile -t _exit_code < <(cat "$(bud__file_for_exit_code)")
@@ -142,6 +143,7 @@ function __bud__compose_execution_report() {
 function __bud__verify_exit_code() {
   local _json_object="${1}"
   local _cond
+  info_begin "exit code verification: '${_json_object}}'"
   mapfile -t _cond < <(json_value_at ".exitCode[]" "${_json_object}")
   mapfile -t _actual_exit_code <"$(bud__file_for_exit_code)"
   if [[ "${_cond[0]}" == "EQUAL" ]]; then
@@ -153,8 +155,14 @@ function __bud__verify_exit_code() {
       echo "Exit code was expected NOT to be <${_cond[1]}> but was."
     fi
   else
-    abort "Unknown condition name: '${_cond[0]}' was specified for exit code checking."
+    local _message="Unknown condition name: '${_cond[0]}' was specified for exit code checking."
+    # We need to print out the message to the stdout to make the framework recognize this is an error.
+    # Since this method may be called via 'process substitution' and it swallows exit code, doing "abort" alone
+    # cannot stop the execution sequence of the caller side in BASH 4.2 or earlier.
+    echo "${_message}"
+    abort "${_message}"
   fi
+  info_end "exit code verification"
 }
 
 function __bud__verify_stdout() {

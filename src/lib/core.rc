@@ -35,10 +35,15 @@ function print_stacktrace() {
   local _e
   while _e="$(caller $_i)"; do
     # shellcheck disable=SC2086
-    _e="$(__bud__format_caller ${_e})"
+    _e="$(__bud__format_caller_for_stacktrace ${_e})"
     message "  at ${_e}"
     _i=$((_i + 1))
   done
+}
+
+function __bud__format_caller_for_stacktrace() {
+  local _line="${1:-???}" _function="${2:-unknown}" _file="${3:-unknown file}"
+  printf "%s:%s (%s)" "${_file}" "${_line}" "${_function}"
 }
 
 ####

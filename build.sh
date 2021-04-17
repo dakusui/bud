@@ -8,17 +8,25 @@ source "$(dirname "${BASH_SOURCE[0]}")/buildtools/build_info.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/jq-front.rc"
 
 __execute_stage_driver_filename=
+__execute_stage_stage_name=
 function __execute_stage() {
   local _stage="${1}"
   shift
   message "EXECUTING:${_stage}..."
   {
     __execute_stage_driver_filename="$(dirname "${BASH_SOURCE[0]}")/buildtools/drivers/${_stage}.rc"
+    __execute_stage_stage_name="${_stage}"
     function execute_stage() {
       abort "The driver: '${__execute_stage_driver_filename}' does not define a function 'execute_stage'"
     }
+    function stage_name() {
+      abort "The driver: '${__execute_stage_driver_filename}' does not define a function 'stage_name'"
+    }
     # shellcheck disable=SC1090
     source "${__execute_stage_driver_filename}"
+    function stage_name() {
+      echo "'${__execute_stage_stage_name}'"
+    }
     "execute_stage" "$@" && message "DONE:${_stage}"
   } || {
     message "FAILED:${_stage}"

@@ -4,13 +4,28 @@ function execute_stage() {
   _report_file="${TESTREPORTDIR}/testreport.json"
   "${EXEC_BASEDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" | jq . >"${_report_file}"
 
-  _report_json=$(jq . "${_report_file}")
-  __print_test_report "${_report_json}" >&2
+  _report_json="$(jq . "${_report_file}")"
+  __print_test_report "${_report_json}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
+  _successful="$(__json_value_at '.wasSuccessful' "${_report_json}")"
+  if [[ "${_successful}" != true ]]; then
+    message "'$(stage_name)' was not successful."
+    return 1
+  fi
 }
 
 function __print_test_report() {
   local _json_object="${1}"
-  echo ".Test Report"
+  local _successful="not successful" _i
+  _i="$(echo "${_report_json}" | jq '.wasSuccessful')"
+  if [[ "${_i}" == true ]]; then
+    _successful="successful"
+  fi
+
+  echo "= Test Report"
+  echo
+  echo "This test suite was ${_successful}."
+  echo
+  echo ".Summary"
   echo "----"
   __get_report_attr "passed" "${_json_object}"
   __get_report_attr "skipped" "${_json_object}"
@@ -19,6 +34,16 @@ function __print_test_report() {
   __get_report_attr "run" "${_json_object}"
   __get_report_attr "all" "${_json_object}"
   echo ""
+  echo "----"
+  echo ""
+  echo ".Passed"
+  echo "----"
+  __passing_test_names "${_json_object}"
+  echo "----"
+  echo ""
+  echo ".Skipped"
+  echo "----"
+  __skipped_test_names "${_json_object}"
   echo "----"
   echo ""
   echo ".Failures (Failed in Execution)"
@@ -30,26 +55,79 @@ function __print_test_report() {
   echo "----"
   __error_test_names "${_json_object}"
   echo "----"
-  echo ""
-  echo ".Skipped"
-  echo "----"
-  __skipped_test_names "${_json_object}"
-  echo "----"
+  echo
+  echo "== Errors"
+  echo
+  __error_test_details "${_json_object}"
+  echo
+  echo "== Failures (Failed in Execution)"
+  echo
+  __failed_test_details "${_json_object}"
+}
+
+function __passing_test_names() {
+  local _json_object="${1}"
+  local _test_names
+  mapfile -t _test_names < <(__extract_test_names 'select(.report.result.success == true)' "${_json_object}")
+  __format_test_names "${_test_names[@]}"
+}
+
+function __filter_for_failed() {
+  echo 'select(.report.result.success == false)'
 }
 
 function __failed_test_names() {
   local _json_object="${1}"
   local _test_names
-  mapfile -t _test_names < <(__extract_test_names 'select(.report.result.success == false)' "${_json_object}")
+  mapfile -t _test_names < <(__extract_test_names "$(__filter_for_failed)" "${_json_object}")
   __format_test_names "${_test_names[@]}"
 }
 
+function __failed_test_details() {
+  local _json_object="${1}"
+  __test_details "$(__filter_for_failed)" "${_json_object}"
+}
+
+function __filter_for_errors() {
+  echo 'select((.report.result.success != false and .report.result.success != true) or (.report.result.precheck != false and .report.result.precheck != true))'
+}
 function __error_test_names() {
   local _json_object="${1}"
   local _test_names
-  mapfile -t _test_names < <(__extract_test_names \
-    'select((.report.result.success != false and .report.result.success != true) or (.report.result.precheck != false and .report.result.precheck != true))' "${_json_object}")
+  mapfile -t _test_names < <(__extract_test_names "$(__filter_for_errors)" "${_json_object}")
   __format_test_names "${_test_names[@]}"
+}
+
+function __error_test_details() {
+  local _json_object="${1}"
+  __test_details "$(__filter_for_errors)" "${_json_object}"
+}
+
+function __test_details() {
+  local _filter="${1}" _json_object="${2}"
+  local _result_objects _i
+  mapfile -t _result_objects < <(__json_value_at ".report.test_results[] | ${_filter}" "${_json_object}")
+
+  if [[ "${#_result_objects[@]}" == 0 ]]; then
+    echo "No test was found in this category."
+  else
+    for _i in "${_result_objects[@]}"; do
+      local _test_name
+      _test_name="$(__json_value_at '.name' "${_i}")"
+      echo "=== ${_test_name}"
+
+      echo ".stdout"
+      echo "----"
+      __json_value_at '.report.driverOutput.stdout' "${_i}"
+      echo "----"
+      echo
+
+      echo ".stderr"
+      echo "----"
+      __json_value_at '.report.driverOutput.stderr' "${_i}"
+      echo "----"
+    done
+  fi
 }
 
 function __skipped_test_names() {
