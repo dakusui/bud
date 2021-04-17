@@ -1,5 +1,0 @@
-function execute_test() {
-  local _target_tests="${1:-*}"
-  bash -eu "tests/tests.sh" "$(pwd)/${APP_NAME}" "$(pwd)/tests" "${_target_tests}"
-  return $?
-}

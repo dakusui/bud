@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -eu -o pipefail -o errtrace
-shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
+shopt -s inherit_errexit nullglob # compat"${BASH_COMPAT=42}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/utils.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/build_info.rc"
@@ -29,7 +29,7 @@ function __execute_stage() {
 
 function main() {
   if [[ $# == 0 ]]; then
-    main clean prepare doc test
+    main clean prepare doc test-compile test
     return 0
   fi
   if [[ ${1} == DOC ]]; then
@@ -38,6 +38,10 @@ function main() {
   fi
   if [[ ${1} == TEST ]]; then
     main clean prepare test-compile test
+    return 0
+  fi
+  if [[ ${1} == COVERAGE ]]; then
+    main clean prepare test-compile coverage
     return 0
   fi
 

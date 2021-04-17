@@ -1,0 +1,21 @@
+"${__BUD__ARRAYS_RC:-false}" && return 0
+readonly __BUD__ARRAYS_RC=true
+
+function join_by() {
+  local _d="${1:?You must specify at least a delimiter}"
+  shift
+  if [[ "${#}" == 0 ]]; then
+    return 0
+  fi
+  local _i _ret="${1}"
+  shift
+  for _i in "${@}"; do
+    _ret="${_ret}${_d}${_i}"
+  done
+  echo "${_ret}"
+}
+
+function array_contains() {
+  local _word="${1}" && shift
+  printf '%s\n' "${@}" | grep -q -E '^'"${_word}"'$'
+}

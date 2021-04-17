@@ -6,8 +6,8 @@ description:
 when:
   description:
     - Just print a message 'Hello world'
-  "${BUD_HOME}/source":
-    - lib/common.rc
+  source:
+    - ${BUD_LIB}/common.rc
   cmd: echo
   args:
     - "-e"

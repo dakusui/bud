@@ -2,7 +2,7 @@ function execute_stage() {
   local _report_json _report_file
   mkdir -p "${TESTREPORTDIR}"
   _report_file="${TESTREPORTDIR}/testreport.json"
-  "${SRCDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" | jq . >"${_report_file}"
+  "${EXEC_BASEDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" | jq . >"${_report_file}"
 
   _report_json=$(jq . "${_report_file}")
   __print_test_report "${_report_json}" >&2

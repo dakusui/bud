@@ -1,0 +1,3 @@
+function execute_stage() {
+  bashcov --bash-path="${SHELL}" -- "${PROJECT_DIR}/build.sh" test "${@}"
+}
