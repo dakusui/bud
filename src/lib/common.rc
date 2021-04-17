@@ -6,7 +6,4 @@ source "$(dirname "${BASH_SOURCE[0]}")/arrays.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/json.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/logging.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/strings.rc"
-
-function bud_temp_file() {
-  mktemp -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}"
-}
+source "$(dirname "${BASH_SOURCE[0]}")/io.rc"
