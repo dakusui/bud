@@ -3,17 +3,22 @@ readonly __BUD__PARSEOPT_JSON_RC=true
 
 source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/json.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/arrays.rc"
 
 function parseopt() {
   # Call getopt to validate the provided input.
-  local _json_array="${1}"
+  local _json_array="${1}" _usage="${2}"
+  shift
   shift
   local _options _ret='{}'
-  local _short_options="ho:" _long_options="help,output:"
+  local _short_options _long_options
+  _short_options=$(__options_string __short_options "${_json_array}")
+  _long_options=$(__options_string __long_options "${_json_array}")
   _options=$(getopt \
     -o "${_short_options}" \
     --long "${_long_options}" -- "$@") || {
-    usage
+    # execute a command passed as "_usage".
+    ${_usage}
     abort "Failed to  parse command line: '$*'"
   }
   if [[ $# -gt 0 ]]; then
@@ -60,6 +65,19 @@ function __option_def() {
   jq -ncrM '[["h", "help", false], ["o", "output",true]]'
 }
 
+function __options_string() {
+  local _options_func_name="${1}" _json_array="${2}"
+  local _long_options=() _arr
+  mapfile -t _arr < <("${_options_func_name}" "${_json_array}")
+  for _i in "${_arr[@]}"; do
+    if [[ "$(__with_value "${_i}" "${_json_array}")" == true ]]; then
+      _i="${_i}:"
+    fi
+    _long_options+=("${_i}")
+  done
+  join_by "," "${_long_options[@]}"
+}
+
 function __long_options() {
   local _json_array="${1}"
   echo "${_json_array}" | jq -crM '.[]|.[1]'
@@ -89,3 +107,5 @@ function __with_value() {
   local _long_option="${1}" _json_array="${2}"
   echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[2]'
 }
+
+parseopt "$(__option_def)" ":" "${@}"
