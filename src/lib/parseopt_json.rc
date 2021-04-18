@@ -107,5 +107,3 @@ function __with_value() {
   local _long_option="${1}" _json_array="${2}"
   echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[2]'
 }
-
-parseopt "$(__option_def)" ":" "${@}"
