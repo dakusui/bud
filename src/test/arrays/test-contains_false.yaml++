@@ -1,8 +1,6 @@
 ---
 "$extends":
   - base/normal.json
-description:
-  - Check if 'array_contains' returns true if the given array contains a specified emenent
 when:
   description:
     - Run 'array_contains' with the first argument contained by the rest.

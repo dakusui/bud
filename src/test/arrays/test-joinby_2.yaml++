@@ -1,8 +1,6 @@
 ---
 "$extends":
   - base/normal.json
-description:
-  - Check if 'join_by' joins an array with a specified delimiter.
 when:
   description:
     - Run 'join_by' with a delimiter '-' and an array (A, B, C).

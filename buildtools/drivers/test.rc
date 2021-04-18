@@ -223,7 +223,7 @@ function __describe_mismatch() {
   fi
   for _i in "${_mismatch_description[@]}"; do
     # shellcheck disable=SC2016
-    echo "- ${_i}" | sed -E 's/<([^>]*)>/`\1`/g'
+    echo "- ${_i}" | sed -E 's/<([^>]*)>/``\1``/g'
   done
 }
 

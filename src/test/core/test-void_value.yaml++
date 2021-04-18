@@ -3,22 +3,17 @@
   - base/normal.json
 when:
   description:
-    - Run 'join_by' with a delimiter '-' and an array (A, B, C).
+    - Call 'app_name' function.
   source:
-    - ${BUD_LIB}/arrays.rc
-  cmd: join_by
-  args:
-    - -
-    - A
-    - B
-    - C
+    - ${BUD_LIB}/core.rc
+  cmd: void_value
 then:
   exitCode:
     - EQUAL
     - 0
   stdout:
     present:
-      - raw:A-B-C
+      - regex:^BUD_VOID\:.+
   stderr:
     absent:
       - regex:.+

@@ -8,7 +8,11 @@ function app_name() {
 }
 
 function is_void_value() {
-  [[ ${1} == "${BUD_VOID}" ]]
+  if [[ ${1} == "${BUD_VOID}" ]]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 function void_value() {

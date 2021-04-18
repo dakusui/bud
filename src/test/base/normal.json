@@ -1,7 +1,6 @@
 {
   "type": "NORMAL",
   "description": [
-    "This is a passing example NORMAL test"
   ],
   "given": {
     "description": [
@@ -41,6 +40,8 @@
     ]
   },
   "then": {
+    "description": [
+    ],
     "exitCode": [
       "EQUAL",
       0
@@ -55,7 +56,6 @@
       "present": [
       ],
       "absent": [
-        "regex:.+"
       ]
     }
   }

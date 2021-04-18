@@ -1,7 +1,7 @@
 {
   "type": "NORMAL",
   "description": [
-    "This is a passing example NORMAL test"
+    "This is an example NORMAL test which should be ignored."
   ],
   "given": {
     "description": [
@@ -43,6 +43,9 @@
     ]
   },
   "then": {
+    "description": [
+      "Make sure the command exit with zero."
+    ],
     "exitCode": [
       "EQUAL",
       0

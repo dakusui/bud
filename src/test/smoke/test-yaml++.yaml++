@@ -2,10 +2,10 @@
 "$extends":
   - base/normal.json
 description:
-  - This is a passing example NORMAL test
+  - This is a passing example NORMAL test for YAML++.
 when:
   description:
-    - Just print a message 'Hello world'
+    - Just print a message 'hello, world'
   source:
     - ${BUD_LIB}/common.rc
   cmd: echo
@@ -13,6 +13,8 @@ when:
     - "-e"
     - hello, world
 then:
+  description":
+    - The message is printed to stdout.
   stdout:
     present:
       - regex:hello.+world

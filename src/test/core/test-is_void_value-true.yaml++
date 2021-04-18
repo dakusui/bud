@@ -2,15 +2,11 @@
 "$extends":
   - base/normal.json
 when:
-  description:
-    - Run 'array_contains' with the first argument contained by the rest.
   source:
-    - ${BUD_LIB}/arrays.rc
-  cmd: array_contains
+    - ${BUD_LIB}/core.rc
+  cmd: is_void_value
   args:
-    - hello
-    - hello
-    - world
+    - BUD_VOID:4a19bc62ecb732c9bd99fcc834116227
 then:
   exitCode:
     - EQUAL

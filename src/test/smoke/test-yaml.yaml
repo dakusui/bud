@@ -5,18 +5,18 @@ description:
 given:
   description:
     - This test should always be executed.
-  stdin: []
+  stdin: [ ]
   shell:
     name: bash
     options:
       - "-eu"
-  source: []
+  source: [ ]
   cmd: ":"
-  args: []
+  args: [ ]
 when:
   description:
-    - Just print a message 'Hello world'
-  stdin: []
+    - Just print a message 'hello, world'
+  stdin: [ ]
   shell:
     name: bash
     options:
@@ -28,14 +28,16 @@ when:
     - "-e"
     - hello, world
 then:
+  description":
+    - The message is printed to stdout.
   exitCode:
     - EQUAL
     - 0
   stdout:
     present:
       - regex:hello.+world
-    absent: []
+    absent: [ ]
   stderr:
-    present: []
+    present: [ ]
     absent:
       - regex:.+

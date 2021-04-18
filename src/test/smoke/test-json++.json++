@@ -3,11 +3,11 @@
     "base/normal.json"
   ],
   "description": [
-    "This is a passing example NORMAL test"
+    "This is a passing example NORMAL test for JSON++"
   ],
   "when": {
     "description": [
-      "Just print a message 'Hello world'"
+      "Just print a message 'hello world'"
     ],
     "${BUD_HOME}/source": [
       "lib/common.rc"
@@ -19,6 +19,9 @@
     ]
   },
   "then": {
+    "description": [
+      "The message is printed to stdout."
+    ],
     "stdout": {
       "present": [
         "regex:hello.+world"

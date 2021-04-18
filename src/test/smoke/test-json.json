@@ -1,11 +1,11 @@
 {
   "type": "NORMAL",
   "description": [
-    "This is a passing example NORMAL test"
+    "This is a passing example NORMAL test for JSON"
   ],
   "given": {
     "description": [
-      "This test should always be executed."
+      "This should always be executed."
     ],
     "stdin": [
     ],
@@ -43,6 +43,9 @@
     ]
   },
   "then": {
+    "description": [
+      "The message is printed to stdout."
+    ],
     "exitCode": [
       "EQUAL",
       0

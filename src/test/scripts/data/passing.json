@@ -43,6 +43,9 @@
     ]
   },
   "then": {
+    "description": [
+      "Make sure the command exit with zero."
+    ],
     "exitCode": [
       "EQUAL",
       0
