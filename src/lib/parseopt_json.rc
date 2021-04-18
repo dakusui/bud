@@ -1,0 +1,91 @@
+"${__BUD__PARSEOPT_JSON_RC:-false}" && return 0
+readonly __BUD__PARSEOPT_JSON_RC=true
+
+source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/json.rc"
+
+function parseopt() {
+  # Call getopt to validate the provided input.
+  local _json_array="${1}"
+  shift
+  local _options _ret='{}'
+  local _short_options="ho:" _long_options="help,output:"
+  _options=$(getopt \
+    -o "${_short_options}" \
+    --long "${_long_options}" -- "$@") || {
+    usage
+    abort "Failed to  parse command line: '$*'"
+  }
+  if [[ $# -gt 0 ]]; then
+    eval set -- "${_options}"
+    while true; do
+      local _o="${1}"
+      if [[ "${_o}" == "-"* && $(__is_short_option "${_o#-}" "${_json_array}") == true ]]; then
+        _o="--$(__long_option_for "${_o#-}" "${_json_array}")"
+      fi
+      if [[ "${_o}" == "--"* && "$(__is_long_option "${_o#--}" "${_json_array}")" == true ]]; then
+        local _key="${_o#--}"
+        if [[ "$(__with_value "${_key}" "${_json_array}")" == true ]]; then
+          local _value="${2}"
+          local _cur='[]' _has_key
+          _has_key="$(echo "${_ret}" | jq -crM 'has("'"${_key}"'")')"
+          if [[ "${_has_key}" == true ]]; then
+            _cur="$(echo "${_ret}" | jq -crM ".${_key}")"
+          fi
+          # shellcheck disable=SC2154
+          _cur="$(jq -ncrM --argjson v "${_cur}" --arg w "${_value}" '$v + [$w]')"
+          _ret="$(echo "${_ret}" | jq -crM --argjson v "${_cur}" '. * {"'"${_key}"'":$v}')"
+          shift
+          shift
+        else
+          _ret="$(echo "${_ret}" | jq -crM '. * {"'"${_key}"'":true}')"
+          shift
+        fi
+      else
+        if [[ "${_o}" == "--" ]]; then
+          shift
+          break
+        else
+          abort "Internal Error!: '${_o}': rest: '${*}'"
+        fi
+      fi
+    done
+  fi
+  local _rest
+  _rest="$(to_json_array "${@}")"
+  jq -ncrM --argjson opts "${_ret}" --argjson rest "${_rest}" '{"opts":$opts,"rest":$rest}'
+}
+
+function __option_def() {
+  jq -ncrM '[["h", "help", false], ["o", "output",true]]'
+}
+
+function __long_options() {
+  local _json_array="${1}"
+  echo "${_json_array}" | jq -crM '.[]|.[1]'
+}
+
+function __short_options() {
+  local _json_array="${1}"
+  echo "${_json_array}" | jq -crM '.[]|.[0]'
+}
+
+function __long_option_for() {
+  local _short_option="${1}" _json_array="${2}"
+  echo "${_json_array}" | jq -crM '.[]|select(.[0]=="'"${_short_option}"'")|.[1]'
+}
+
+function __is_short_option() {
+  local _short_option="${1}" _json_array="${2}"
+  echo "${_json_array}" | jq -crM '.[]|select(.[0]=="'"${_short_option}"'")|type|.=="array"'
+}
+
+function __is_long_option() {
+  local _long_option="${1}" _json_array="${2}"
+  echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|type|.=="array"'
+}
+
+function __with_value() {
+  local _long_option="${1}" _json_array="${2}"
+  echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[2]'
+}
