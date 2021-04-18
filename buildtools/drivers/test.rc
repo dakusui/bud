@@ -21,7 +21,8 @@ function __print_test_report() {
     _successful="successful"
   fi
 
-  echo "= Test Report"
+  echo '= Test Report: `'"${APP_NAME}"'`'
+  echo ":toc: left"
   echo
   echo "This test suite was ${_successful}."
   echo
@@ -112,22 +113,118 @@ function __test_details() {
     echo "No test was found in this category."
   else
     for _i in "${_result_objects[@]}"; do
-      local _test_name
+      local _test_name _stage
       _test_name="$(__json_value_at '.name' "${_i}")"
+      _stage="$(__find_defect_stage "${_i}")"
       echo "=== ${_test_name}"
-
-      echo ".stdout"
-      echo "----"
-      __json_value_at '.report.driverOutput.stdout' "${_i}"
-      echo "----"
       echo
 
-      echo ".stderr"
-      echo "----"
-      __json_value_at '.report.driverOutput.stderr' "${_i}"
-      echo "----"
+      echo "==== exit code"
+      echo
+      __describe_exitcodecheck_result "${_i}"
+      echo
+      echo "==== stdout"
+      echo
+      __describe_filecheck_result "stdout" "${_stage}" "${_i}"
+
+      echo "==== stderr"
+      echo
+      __describe_filecheck_result "stderr" "${_stage}" "${_i}"
+
+      local _has_framework_output=false
+      _has_framework_output="$(echo "${_i}" | jq -crM '.report|has("driverOutput")')"
+      if [[ "${_has_framework_output}" == true ]]; then
+        echo "==== Framework output"
+        echo
+        __describe_framework_output "${_i}"
+      fi
     done
   fi
+}
+
+function __find_defect_stage() {
+  local _result_json_object="${1}"
+  local _precheck
+  _precheck="$(__json_value_at '.report.result.precheck' "${_result_json_object}")"
+  if [[ "${_precheck}" != true ]]; then
+    echo "precheck"
+  fi
+  echo "execution"
+}
+
+function __describe_exitcodecheck_result() {
+  local _report_json_object="${1}"
+  local _was_successful _json_object_exitcode
+  _json_object_exitcode="$(__json_value_at ".report.result.exitCode" "${_report_json_object}")"
+  _was_successful="$(__json_value_at '.success' "${_json_object_exitcode}")"
+  if [[ "${_was_successful}" == true ]]; then
+    # shellcheck disable=SC2016
+    echo 'Check for exit code was successful.'
+  else
+    # shellcheck disable=SC2016
+    echo 'Check for exit code was not successful because of the following mismatch(es).'
+    echo
+    __describe_mismatch "${_json_object_exitcode}"
+  fi
+  echo
+}
+
+function __describe_filecheck_result() {
+  local _file="${1}" _stage="${2}" _report_json_object="${3}"
+  local _was_successful _json_object_file
+  # shellcheck disable=SC2016
+  echo '.Actual output to `'"${_file}"'` in `'${_stage}'` stage'
+  echo '----'
+  __json_value_at ".report.${_stage}.${_file}[]" "${_report_json_object}"
+  echo '----'
+
+  _json_object_file="$(__json_value_at ".report.result.${_file}" "${_report_json_object}")"
+  _was_successful="$(__json_value_at '.success' "${_json_object_file}")"
+  if [[ "${_was_successful}" == true ]]; then
+    # shellcheck disable=SC2016
+    echo 'Check for `'"${_file}"'` was successful.'
+  else
+    # shellcheck disable=SC2016
+    echo 'Check for `'${_file}'` was not successful because of the following mismatch(es).'
+    echo
+    __describe_mismatch "${_json_object_file}"
+  fi
+  echo
+}
+
+function __describe_framework_output() {
+  local _driver_output="${2}"
+
+  __framework_output "stdout" "${_driver_output}"
+
+  __framework_output "stderr" "${_driver_output}"
+
+}
+
+function __framework_output() {
+  local _file="${1}" _driver_output="${2}"
+
+  # !-- framework output
+  local _driver_output
+  _driver_output="$(__json_value_at ".report.driverOutput.${_file}" "${_driver_output}")"
+  echo ".${_file}"
+  echo "----"
+  echo "${_driver_output}"
+  echo "----"
+  echo
+}
+
+function __describe_mismatch() {
+  local _json_object_file="${1}"
+  local _mismatch_description _i
+  mapfile -t _mismatch_description < <(__json_value_at ".messages[]" "${_json_object_file}")
+  if [[ ${#_mismatch_description[@]} == 0 ]]; then
+    _mismatch_description=("(No mismatch description was given.)")
+  fi
+  for _i in "${_mismatch_description[@]}"; do
+    # shellcheck disable=SC2016
+    echo "- ${_i}" | sed -E 's/<([^>]*)>/`\1`/g'
+  done
 }
 
 function __skipped_test_names() {

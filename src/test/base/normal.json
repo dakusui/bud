@@ -36,10 +36,8 @@
     },
     "source": [
     ],
-    "cmd": "echo",
+    "cmd": "eval:string:$(error 'missing attribute!')",
     "args": [
-      "-e",
-      "hello, world"
     ]
   },
   "then": {
