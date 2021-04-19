@@ -11,9 +11,12 @@ function parseopt() {
   shift
   shift
   local _options _ret='{}'
-  local _short_options _long_options
+  local _short_options _long_options _i
   _short_options=$(__options_string __short_options "${_json_array}")
   _long_options=$(__options_string __long_options "${_json_array}")
+  for _i in "${_long_options[@]}"; do
+    _ret="$(jq --ncrM --argjson ret '$ret * {"'"${_i}"'":[]}')"
+  done
   _options=$(getopt \
     -o "${_short_options}" \
     --long "${_long_options}" -- "$@") || {

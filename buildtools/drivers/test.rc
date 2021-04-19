@@ -1,11 +1,12 @@
 function execute_stage() {
+  local _test_filter=${1:-.*}
   local _report_json _report_file
   mkdir -p "${TESTREPORTDIR}"
   _report_file="${TESTREPORTDIR}/testreport.json"
-  "${EXEC_BASEDIR}/bin/testrunner" "${TESTDIR}" ".*" "${TESTREPORTDIR}" | jq . >"${_report_file}"
+  "${EXEC_BASEDIR}/bin/testrunner" "${TESTDIR}" "${_test_filter}" "${TESTREPORTDIR}" | jq . >"${_report_file}"
 
   _report_json="$(jq . "${_report_file}")"
-  __print_test_report "${_report_json}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
+  __print_test_report "${_report_json}" "${_test_filter}" "${TESTDIR}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
   _successful="$(__json_value_at '.wasSuccessful' "${_report_json}")"
   if [[ "${_successful}" != true ]]; then
     message "'$(stage_name)' was not successful."
@@ -14,7 +15,7 @@ function execute_stage() {
 }
 
 function __print_test_report() {
-  local _json_object="${1}"
+  local _json_object="${1}" _filter="${2}" _testdir="${3}"
   local _successful="not successful" _i
   _i="$(echo "${_report_json}" | jq '.wasSuccessful')"
   if [[ "${_i}" == true ]]; then
@@ -25,6 +26,8 @@ function __print_test_report() {
   echo ":toc: left"
   echo
   echo "This test suite was ${_successful}."
+  # shellcheck disable=SC2016
+  echo 'Tests under `'"${_testdir}"'` that match a filter `'"${_test_filter}"'` were executed.'
   echo
   echo ".Summary"
   echo "----"
