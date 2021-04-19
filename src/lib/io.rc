@@ -3,6 +3,11 @@ readonly __BUD__IO_RC=true
 
 source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
 
+__BUD_SESSION_ID=$(date +"%Y-%m-%d_%T-%6N" | sed 's![/:]!-!g')
+
 function bud_temp_file() {
-  mktemp -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}"
+  mktemp -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}/${__BUD_SESSION_ID}"
 }
+
+mkdir -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}/${__BUD_SESSION_ID}"
+
