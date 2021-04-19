@@ -129,7 +129,7 @@ function run_each_test() {
   fi
   debug "_test_result_json: '${_test_result_json}'"
   _test_result_json="$(json_object_merge "${_precheck_result}" "${_test_result_json}")"
-  echo "${_test_result_json}"
+  echo "${_test_result_json}" | jq -crM .
   info_end "${1}"
 }
 
@@ -137,15 +137,27 @@ function run_tests() {
   local _test_rootdir="${1:?Test Root Directory is missing.}"
   local _test_filter="${2:-.*}"
   local _test_reportdir="${3:-${_test_rootdir}}"
+  local _parallel="${4:-true}"
   _test_rootdir="${_test_rootdir%/}"
   local -a _tests
   mapfile -t _tests < <(list_tests "${_test_rootdir}" | grep -E "${_test_filter}" || abort "Failed to list tests in directory:'${_test_rootdir}' with filter: '${_test_filter}'")
   [[ "${#_tests[@]}" -gt 0 ]] || abort "No available tests.: (directory: '${_test_rootdir}', filter: '${_test_filter}')"
   local _passed=0 _skipped=0 _failed=0 _error=0 _run=0 _numtests=0 _test_results=()
-  local _i
-  _numtests="${#_tests[@]}"
+  local _i _parallel_execution=""
+  local -a _test_result_files=()
   for _i in "${_tests[@]}"; do
-    _each_test_result_content="$(run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}")" || :
+    _each_test_result_file="$(bud_temp_file)"
+    if ${_parallel}; then
+      run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}" ${_parallel_execution} "${_parallel_execution}" >"${_each_test_result_file}" &
+    else
+      run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}" ${_parallel_execution} "${_parallel_execution}" >"${_each_test_result_file}"
+    fi
+    _test_result_files+=("${_each_test_result_file}")
+  done
+  wait
+  _numtests="${#_tests[@]}"
+  for _i in "${_test_result_files[@]}"; do
+    _each_test_result_content="$(cat "${_i}")"
     _test_results+=("${_each_test_result_content}")
     local _precheck _execution
     _precheck="$(echo "${_each_test_result_content}" | jq '.report.result.precheck')"
