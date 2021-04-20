@@ -1,6 +1,7 @@
 "${__BUD__ARRAYS_RC:-false}" && return 0
 readonly __BUD__ARRAYS_RC=true
 
+# To join with an empty string, pass "--"  as the first parameter
 function join_by() {
   local _d="${1:?You must specify at least a delimiter}"
   shift
