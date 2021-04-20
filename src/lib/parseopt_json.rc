@@ -5,37 +5,50 @@ source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/json.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/arrays.rc"
 
+# Following is an example function to print a JSON object that should be passed to
+# the 'parseopt' function as its first argument.
+# ----
+# function __option_def() {
+#   jq -ncrM '[["h", "help", false], ["o", "output",true]]'
+# }
+# ----
+# The second parameter is a function called when the parsing is failed.
+# It is adviced to pass a name of a function that prints the usage of your application.
 function parseopt() {
+  local _spec_json="${1}"
   # Call getopt to validate the provided input.
-  local _json_array="${1}" _usage="${2}"
-  shift
   shift
   local _options _ret='{}'
   local _short_options _long_options _i
-  _short_options=$(__options_string __short_options "${_json_array}")
-  _long_options=$(__options_string __long_options "${_json_array}")
-  for _i in "${_long_options[@]}"; do
-    _ret="$(jq --ncrM --argjson ret '$ret * {"'"${_i}"'":[]}')"
+  message "_spec_json: '${_spec_json}'"
+  _json_array="$(json_value_at ".options" "${_spec_json}")"
+  _short_options=$(__bud__options_string __bud__short_options "${_json_array}")
+  _long_options=$(__bud__options_string __bud__long_options "${_json_array}")
+  for _i in $(__bud__long_options "${_json_array}"); do
+    _ret="$(jq -ncrM --argjson ret "${_ret}" '$ret * {"'"${_i}"'":[]}')"
   done
   _options=$(getopt \
     -o "${_short_options}" \
     --long "${_long_options}" -- "$@") || {
     # execute a command passed as "_usage".
-    ${_usage}
-    abort "Failed to  parse command line: '$*'"
+    __bud__usage "${_spec_json}"
+    abort "Failed to  parse command line: '$*': short options='${_short_options}': long options='${_long_options}'"
   }
   if [[ $# -gt 0 ]]; then
     eval set -- "${_options}"
     while true; do
       local _o="${1}"
-      if [[ "${_o}" == "-"* && $(__is_short_option "${_o#-}" "${_json_array}") == true ]]; then
-        _o="--$(__long_option_for "${_o#-}" "${_json_array}")"
+      if [[ "${_o}" == "-"* && $(__bud__is_short_option "${_o#-}" "${_json_array}") == true ]]; then
+        _o="--$(__bud__long_option_for "${_o#-}" "${_json_array}")"
       fi
-      if [[ "${_o}" == "--"* && "$(__is_long_option "${_o#--}" "${_json_array}")" == true ]]; then
+      if [[ "${_o}" == "--"* && "$(__bud__is_long_option "${_o#--}" "${_json_array}")" == true ]]; then
         local _key="${_o#--}"
-        if [[ "$(__with_value "${_key}" "${_json_array}")" == true ]]; then
+        message "_key: '${_key}'"
+        message "_ret: '${_ret}'"
+        if [[ "$(__bud__with_value "${_key}" "${_json_array}")" == true ]]; then
           local _value="${2}"
-          local _cur='[]' _has_key
+          local _cur _has_key
+          _cur="$(__bud__default_value_for "${_key}")"
           _has_key="$(echo "${_ret}" | jq -crM 'has("'"${_key}"'")')"
           if [[ "${_has_key}" == true ]]; then
             _cur="$(echo "${_ret}" | jq -crM ".${_key}")"
@@ -64,49 +77,122 @@ function parseopt() {
   jq -ncrM --argjson opts "${_ret}" --argjson rest "${_rest}" '{"opts":$opts,"rest":$rest}'
 }
 
-function __option_def() {
-  jq -ncrM '[["h", "help", false], ["o", "output",true]]'
+function __bud__usage() {
+  local _spec_json="${1}"
+  echo "Usage: $(json_value_at '.usage' "${_spec_json}")"
+  echo ""
+  json_value_at '.description[]' "${_spec_json}"
+  echo ""
+  local _options _i
+  mapfile -t _options < <(json_value_at '.options[]' "${_spec_json}")
+  for _i in "${_options[@]}"; do
+    local _s
+    _s="$(json_value_at '.[0]' "${_i}")"
+    if [[ "${_s}" == "" ]]; then
+      _s="   "
+    else
+      _s="-${_s},"
+    fi
+    printf " %3s %-24s %s (default:%s)\n" "${_s}" "--$(json_value_at .[1] "${_i}")" "$(json_value_at .[4] "${_i}")" "$(json_value_at .[3] "${_i}")"
+  done
+  echo
+  echo "Examples:"
+  local _examples
+  mapfile -t _examples < <(json_value_at '.examples|keys[]' "${_spec_json}")
+  local _w
+  _w="$(for _i in _examples[@]; do
+    echo "${_i}" | awk '{print length}' | sort -r -c | head --lines=1
+  done)"
+  for _i in "${_examples[@]}"; do
+    local _v
+    _v="$(json_value_at '.examples."'"${_i}"'"' "${_spec_json}")"
+    printf "  %-${_w}s  %s\n" "${_i}" "${_v}"
+  done
+  echo
+  local _references
+  mapfile -t _references < <(json_value_at '.references|keys[]' "${_spec_json}")
+  for _i in "${_references[@]}"; do
+    local _v
+    echo "${_i}: <$(json_value_at '.references."'"${_i}"'"' "${_spec_json}")>"
+  done
 }
 
-function __options_string() {
+function __bud__options_string() {
   local _options_func_name="${1}" _json_array="${2}"
-  local _long_options=() _arr
+  local _options=() _arr
+  message "_json_array: '${_json_array}'"
   mapfile -t _arr < <("${_options_func_name}" "${_json_array}")
   for _i in "${_arr[@]}"; do
-    if [[ "$(__with_value "${_i}" "${_json_array}")" == true ]]; then
+    if [[ "$(__bud__with_value "${_i}" "${_json_array}")" == true ]]; then
       _i="${_i}:"
     fi
-    _long_options+=("${_i}")
+    _options+=("${_i}")
   done
-  join_by "," "${_long_options[@]}"
+  join_by "," "${_options[@]}"
 }
 
-function __long_options() {
+function __bud__long_options() {
   local _json_array="${1}"
   echo "${_json_array}" | jq -crM '.[]|.[1]'
 }
 
-function __short_options() {
+function __bud__short_options() {
   local _json_array="${1}"
   echo "${_json_array}" | jq -crM '.[]|.[0]'
 }
 
-function __long_option_for() {
+function __bud__long_option_for() {
   local _short_option="${1}" _json_array="${2}"
   echo "${_json_array}" | jq -crM '.[]|select(.[0]=="'"${_short_option}"'")|.[1]'
 }
 
-function __is_short_option() {
+function __bud__is_short_option() {
   local _short_option="${1}" _json_array="${2}"
   echo "${_json_array}" | jq -crM '.[]|select(.[0]=="'"${_short_option}"'")|type|.=="array"'
 }
 
-function __is_long_option() {
+function __bud__is_long_option() {
   local _long_option="${1}" _json_array="${2}"
   echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|type|.=="array"'
 }
 
-function __with_value() {
+function __bud__with_value() {
   local _long_option="${1}" _json_array="${2}"
   echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[2]'
 }
+
+function __bud__default_value_for() {
+  local _long_option="${1}" _json_array="${2}"
+  echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[3]'
+}
+
+function __bud__description_for_option() {
+  local _long_option="${1}" _json_array="${2}"
+  echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[4]'
+}
+
+var='{
+    "usage": "testrunner [OPTION]... [DIRECTORY]",
+    "description":[
+      "Runs tests under the DIRECTORY.",
+      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
+    ],
+    "options":[
+      ["h","help",false,false,"show this help"],
+      ["p","parallel",false,false,"execute the tests in parallel"],
+      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+      ["","test-reportdir",true,[],"write test reports under the specified directory"]
+    ],
+    "examples":{
+      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+    },
+    "references":{
+      "github project": "https://github.com/dakusui/bud"
+    }
+  }'
+message "var: '$var'"
+var="$(echo "${var}" | jq -crM .)"
+message "var: '$var'"
+# parseopt "${var}" "${@}"
+echo "----"
+__bud__usage "${var}"

@@ -200,4 +200,43 @@ function run_tests() {
   echo "${_ret}"
 }
 
-run_tests "${@}"
+function main() {
+  local _parsed_opts_json
+  _parsed_opts_json="$(parseopt '{
+    "usage": "testrunner [OPTION]... [DIRECTORY]"
+    "description":[
+      "Runs tests under the DIRECTORY.",
+      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
+    ],
+    "options":[
+      ["h","help",false,false,"show this help"],
+      ["p","parallel",false,false,"execute the tests in parallel"],
+      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+      ["","test-reportdir",true,[],"write test reports under the specified directory"]
+    ],
+    "examples":{
+      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+    },
+    "references":{
+      "github project": "https://github.com/dakusui/bud"
+    }' "${@}")"
+  local _is_parallel _filter _test_rootdir _test_reportdir _rest
+  mapfile -t _test_rootdir < <(json_value_at ".rest[]" "${_parsed_opts_json}")
+  if [[ "${#_test_rootdir[@]}" == 0 ]]; then
+    abort "Test root directory was missing."
+  fi
+  if [[ "${#_test_rootdir[@]}" -gt 1 ]]; then
+    abort "More than one test directories are specified: '${_test_rootdir[*]}'"
+  fi
+
+  _is_parallel="$(json_value_at ".opts.parallel" "${_parsed_opts_json}")"
+  mapfile -t _filter < <(json_value_at ".opts.filter[]" "${_parsed_opts_json}")
+  mapfile -t _test_reportdir < <(json_value_at ".opts.test-reportdir[]" "${_parsed_opts_json}")
+  if [[ "${#_test_reportdir[@]}" == 0 ]]; then
+    _test_reportdir[0]="${_test_rootdir[0]}"
+  fi
+  _rest < <(json_value_at ".rest[]" "${_parsed_opts_json}")
+  run_tests "${_test_rootdir[0]}" "${_filter[0]}" "${_test_reportdir[0]}" "${_is_parallel}" "${_rest[@]}"
+}
+
+main "${@}"
