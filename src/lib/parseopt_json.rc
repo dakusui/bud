@@ -39,7 +39,9 @@ function parseopt() {
   _short_options=$(__bud__options_string "${_json_array}" 0 "")
   _long_options=$(__bud__options_string "${_json_array}" 1 ",")
   for _i in $(__bud__long_options "${_json_array}"); do
-    _ret="$(jq -ncrM --argjson ret "${_ret}" '$ret * {"'"${_i}"'":[]}')"
+    local _default_value
+    _default_value="$(__bud__default_value_for "${_i}" "${_json_array}")"
+    _ret="$(jq -ncrM --argjson ret "${_ret}" --argjson default_value "${_default_value}" '$ret * {"'"${_i}"'":$default_value}')"
   done
   _options=$(getopt \
     -o "${_short_options}" \
@@ -195,24 +197,24 @@ function __bud__description_for_option() {
   echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[4]'
 }
 
-#var='{
-#    "usage": "testrunner [OPTION]... [DIRECTORY]",
-#    "description":[
-#      "Runs tests under the DIRECTORY.",
-#      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
-#    ],
-#    "options":[
-#      ["h","help",false,false,"show this help"],
-#      ["p","parallel",false,false,"execute the tests in parallel"],
-#      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-#      ["","test-reportdir",true,[],"write test reports under the specified directory"]
-#    ],
-#    "examples":{
-#      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
-#    },
-#    "references":{
-#      "github project": "https://github.com/dakusui/bud"
-#    }
-#  }'
-# var="$(echo "${var}" | jq -crM .)"
-# __bud__usage "${var}"
+var='{
+    "usage": "testrunner [OPTION]... [DIRECTORY]",
+    "description":[
+      "Runs tests under the DIRECTORY.",
+      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
+    ],
+    "options":[
+      ["h","help",false,false,"show this help"],
+      ["p","parallel",false,false,"execute the tests in parallel"],
+      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+      ["","test-reportdir",true,[],"write test reports under the specified directory"]
+    ],
+    "examples":{
+      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+    },
+    "references":{
+      "github project": "https://github.com/dakusui/bud"
+    }
+  }'
+var="$(echo "${var}" | jq -crM .)"
+parseopt "${var}"
