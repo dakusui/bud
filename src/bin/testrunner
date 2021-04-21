@@ -140,6 +140,7 @@ function run_tests() {
   local _parallel="${4:-true}"
   _test_rootdir="${_test_rootdir%/}"
   local -a _tests
+  info_begin "_test_rootdir: '${_test_rootdir}'; _test_filter: '${_test_filter}'; _test_reportdir: '${_test_reportdir}'"
   mapfile -t _tests < <(list_tests "${_test_rootdir}" | grep -E "${_test_filter}" || abort "Failed to list tests in directory:'${_test_rootdir}' with filter: '${_test_filter}'")
   [[ "${#_tests[@]}" -gt 0 ]] || abort "No available tests.: (directory: '${_test_rootdir}', filter: '${_test_filter}')"
   local _passed=0 _skipped=0 _failed=0 _error=0 _run=0 _numtests=0 _test_results=()
@@ -198,6 +199,7 @@ function run_tests() {
     --argjson test_results "${_test_results_json}" \
     '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
   echo "${_ret}"
+  info_end
 }
 
 function main() {
@@ -240,7 +242,7 @@ function main() {
 function parseopt_string_value_for() {
   local _long_opt_name="${1}" _parsed_opts_json="${2}" _fallback_value="${3:-$(void_value)}"
   local _arr _ret
-  mapfile -t _arr < <(__bud__parseopt_value_for "${_long_opt_name}" "${_parsed_opts_json}")
+  mapfile -t _arr < <(parseopt_array_value_for "${_long_opt_name}" "${_parsed_opts_json}")
   if [[ "${#_arr[@]}" == 0 ]]; then
     if is_void_value "${_fallback_value}"; then
       abort "The value for '${_long_opt_name}' is missing."
@@ -259,7 +261,7 @@ function parseopt_rest_values() {
 
 function parseopt_array_value_for() {
   local _long_opt_name="${1}" _parsed_opts_json="${2}"
-  __bud__parseopt_value_for "${_long_opt_name}[]" "${_parsed_opts_json}"
+  __bud__parseopt_value_for "${_long_opt_name}" "${_parsed_opts_json}" | jq -cr '.[]'
 }
 
 function parseopt_boolean_value_for() {

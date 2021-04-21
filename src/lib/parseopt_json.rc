@@ -53,10 +53,11 @@ function parseopt() {
   _json_array="$(json_value_at ".options" "${_spec_json}")"
   _short_options=$(__bud__options_string "${_json_array}" 0 "")
   _long_options=$(__bud__options_string "${_json_array}" 1 ",")
+  local _default_values='{}'
   for _i in $(__bud__long_options "${_json_array}"); do
     local _default_value
     _default_value="$(__bud__default_value_for "${_i}" "${_json_array}")"
-    _ret="$(jq -ncrM --argjson ret "${_ret}" --argjson default_value "${_default_value}" '$ret * {"'"${_i}"'":$default_value}')"
+    _default_values="$(jq -ncrM --argjson default_values "${_default_values}" --argjson default_value "${_default_value}" '$default_values * {"'"${_i}"'":$default_value}')"
   done
   _options=$(getopt \
     -o "${_short_options}" \
@@ -77,10 +78,10 @@ function parseopt() {
         if [[ "$(__bud__with_value "${_key}" "${_json_array}")" == true ]]; then
           local _value="${2}"
           local _cur _has_key
-          _cur="$(__bud__default_value_for "${_key}" "${_json_array}")"
+          _cur="[]"
           _has_key="$(echo "${_ret}" | jq -crM 'has("'"${_key}"'")')"
           if [[ "${_has_key}" == true ]]; then
-            _cur="$(echo "${_ret}" | jq -crM ".${_key}")"
+            _cur="$(echo "${_ret}" | jq -crM '."'"${_key}"'"')"
           fi
           # shellcheck disable=SC2154
           _cur="$(jq -ncrM --argjson v "${_cur}" --arg w "${_value}" '$v + [$w]')"
@@ -101,6 +102,7 @@ function parseopt() {
       fi
     done
   fi
+  _ret="$(jq -ncrM --argjson v "${_default_values}" --argjson w "${_ret}" '$v * $w')"
   local _rest
   _rest="$(to_json_array "${@}")"
   jq -ncrM --argjson opts "${_ret}" --argjson rest "${_rest}" '{"opts":$opts,"rest":$rest}'
