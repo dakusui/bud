@@ -45,11 +45,11 @@ function main() {
     return 0
   fi
   if [[ ${1} == TEST ]]; then
-    main clean prepare test-compile test
+    main clean prepare test
     return 0
   fi
   if [[ ${1} == COVERAGE ]]; then
-    main clean prepare test-compile coverage
+    main clean prepare coverage
     return 0
   fi
 

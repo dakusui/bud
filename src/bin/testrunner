@@ -31,10 +31,13 @@ TESTRUNNER_SPECIFICATION='{
 
 function prepare_tests() {
   local _srcdir="${1}" _outdir="${2}" _is_parallel="${3}"
-  # Create a directory for output.
-  mkdir -p "${_outdir}"
+  info "_srcdir: '${_srcdir}'; _outdir: '${_outdir}'; _is_parallel: '${_is_parallel}'"
   # Copy contents in srcdir to outdir
-  cp -r "${_srcdir}"/* "${_outdir}"/
+  if [[ "${_srcdir}" != "${_outdir}" ]]; then
+    # Create a directory for output.
+    mkdir -p "${_outdir}"
+    cp -r "${_srcdir}"/* "${_outdir}"/
+  fi
   # Compile tests
   __compile_tests "${_outdir}" "${_is_parallel}"
 }
@@ -50,48 +53,50 @@ function __list_test_sources_by_extension() {
 function __compile_tests() {
   local _workdir="${1}" _is_parallel="${2}"
   local _source_files _i
-  message "Processing 'yaml++' files: (Converting them into 'json++' files)"
+  info_begin "Processing 'yaml++' files: (Converting them into 'json++' files)"
   ensure_no_bg_jobs
-  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" ".yaml++")
+  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" "yaml\+\+")
   for _i in "${_source_files[@]}"; do
-    message "- '${_i}'"
+    info "- '${_i}'"
     if [[ "${_is_parallel}" == true ]]; then
-      yaml2json "${_i}" >"${_i%.yaml++}.json++" &
+      yaml2json "${_workdir}/${_i}" >"${_workdir}/${_i%.yaml++}.json++" &
     else
-      yaml2json "${_i}" >"${_i%.yaml++}.json++"
+      yaml2json "${_workdir}/${_i}" >"${_workdir}/${_i%.yaml++}.json++"
     fi
   done
   wait_for_jobs
-  message "Done."
+  info_end "Done."
 
-  message "Processing 'yaml' files: (Converting them into 'json' files)"
+  info_begin "Processing 'yaml' files: (Converting them into 'json' files)"
   ensure_no_bg_jobs
-  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" ".yaml++")
+  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" "yaml")
   for _i in "${_source_files[@]}"; do
-    message "- '${_i}'"
+    info "- '${_i}'"
     if [[ "${_is_parallel}" == true ]]; then
-      yaml2json "${_i}" >"${_i%.yaml}.json" &
+      yaml2json "${_workdir}/${_i}" >"${_workdir}/${_i%.yaml}.json" &
     else
-      yaml2json "${_i}" >"${_i%.yaml}.json"
+      yaml2json "${_workdir}/${_i}" >"${_workdir}/${_i%.yaml}.json"
     fi
   done
   wait_for_jobs
-  message "Done."
+  info_end "Done."
 
-  message "Processing 'json++' files: (Converting them into 'json' files)"
+  info_begin "Processing 'json++' files: (Converting them into 'json' files)"
   ensure_no_bg_jobs
-  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" ".yaml++")
-  export JF_PATH="${TESTDIR}"
+  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" "json\+\+")
+  local _pwd
+  _pwd="$(pwd)"
+  export JF_PATH="${_pwd}:${_workdir}"
   for _i in "${_source_files[@]}"; do
-    message "- '${_i}'"
+    info "- '${_i}'"
     if [[ "${_is_parallel}" == true ]]; then
-      jq-front "${_i}" >"${_i%++}" &
+      jq-front "${_workdir}/${_i}" >"${_workdir}/${_i%++}" &
     else
-      jq-front "${_i}" >"${_i%++}" &
+      jq-front "${_workdir}/${_i}" >"${_workdir}/${_i%++}" &
     fi
   done
   wait_for_jobs
-  message "Done."
+  info_end "Done."
 }
 
 function list_executable_tests() {
@@ -320,10 +325,11 @@ function main() {
 
   _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
-  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" "${HOME}/.bud/${_session_id}")"
+  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" ".bud/sessions/${_session_id}")"
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
 
-  run_tests "${_test_rootdir[0]}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
+  prepare_tests "${_test_rootdir[0]}" "${_workdir}" "${_is_parallel}"
+  run_tests "${_workdir}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
 }
 
 main "${@}"
