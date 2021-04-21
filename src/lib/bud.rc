@@ -7,5 +7,6 @@ readonly __BUD__BUD_RC=true
 
 source "$(dirname "${BASH_SOURCE[0]}")/opts.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/common.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/jobs.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/cmd_unit.rc"

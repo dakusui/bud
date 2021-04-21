@@ -167,6 +167,7 @@ function run_tests() {
   local _passed=0 _skipped=0 _failed=0 _error=0 _run=0 _numtests=0 _test_results=()
   local _i _parallel_execution=""
   local -a _test_result_files=()
+  ensure_no_bg_jobs
   for _i in "${_tests[@]}"; do
     _each_test_result_file="$(bud_temp_file)"
     if ${_parallel}; then
@@ -176,7 +177,8 @@ function run_tests() {
     fi
     _test_result_files+=("${_each_test_result_file}")
   done
-  wait
+  wait_for_jobs
+
   _numtests="${#_tests[@]}"
   for _i in "${_test_result_files[@]}"; do
     _each_test_result_content="$(cat "${_i}")"

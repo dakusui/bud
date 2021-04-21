@@ -1,3 +1,5 @@
+source "${PROJECT_DIR}/src/lib/jobs.rc"
+
 function execute_stage() {
   local _source_files _i
   message "Processing 'yaml++' files: (Converting them into 'json++' files)"
@@ -30,36 +32,4 @@ function execute_stage() {
   done
   wait_for_jobs
   message "Done."
-}
-
-function ensure_no_bg_jobs() {
-  local _num_remaining_jobs
-  _num_remaining_jobs="$(jobs -l | wc -l)"
-  if [[ "${_num_remaining_jobs}" -gt 0 ]]; then
-    abort "There are non-finished jobs."
-  fi
-}
-
-function wait_for_jobs() {
-  local _all_passed=true
-  while true; do
-    local _num_remaining_jobs
-    _num_remaining_jobs="$(jobs -l | wc -l)"
-    if [[ "${_num_remaining_jobs}" == 0 ]]; then
-      message "No more background jobs"
-      break
-    fi
-    wait -n || {
-      local _exit_code=$?
-      if [[ "${_exit_code}" != 0 ]]; then
-        _all_passed=false
-        message "ERROR: Error was detected."
-        continue
-      fi
-    }
-  done
-  if [[ "${_all_passed}" == false ]]; then
-    abort "Some jobs did not finish correctly."
-  fi
-  return 0
 }
