@@ -28,6 +28,21 @@ source "$(dirname "${BASH_SOURCE[0]}")/arrays.rc"
 #    }
 #  }
 # ----
+#
+# OUTPUT
+# ----
+# {
+#  "opts": {
+#    "help": false,
+#    "parallel": false,
+#    "filter": [
+#      ".*"
+#    ],
+#    "test-reportdir": []
+#  },
+#  "rest": []
+# }
+# ----
 function parseopt() {
   local _spec_json="${1}"
   # Call getopt to validate the provided input.
@@ -47,7 +62,7 @@ function parseopt() {
     -o "${_short_options}" \
     --long "${_long_options}" -- "$@") || {
     # execute a command passed as "_usage".
-    __bud__usage "${_spec_json}" >&2
+    print_usage "${_spec_json}" >&2
     abort "Failed to  parse command line: '$*': short options='${_short_options}': long options='${_long_options}'"
   }
   if [[ $# -gt 0 ]]; then
@@ -59,8 +74,6 @@ function parseopt() {
       fi
       if [[ "${_o}" == "--"* && "$(__bud__is_long_option "${_o#--}" "${_json_array}")" == true ]]; then
         local _key="${_o#--}"
-        message "_key: '${_key}'"
-        message "_ret: '${_ret}'"
         if [[ "$(__bud__with_value "${_key}" "${_json_array}")" == true ]]; then
           local _value="${2}"
           local _cur _has_key
@@ -93,7 +106,7 @@ function parseopt() {
   jq -ncrM --argjson opts "${_ret}" --argjson rest "${_rest}" '{"opts":$opts,"rest":$rest}'
 }
 
-function __bud__usage() {
+function print_usage() {
   local _spec_json="${1}"
   echo "Usage: $(json_value_at '.usage' "${_spec_json}")"
   echo ""
@@ -197,24 +210,24 @@ function __bud__description_for_option() {
   echo "${_json_array}" | jq -crM '.[]|select(.[1]=="'"${_long_option}"'")|.[4]'
 }
 
-var='{
-    "usage": "testrunner [OPTION]... [DIRECTORY]",
-    "description":[
-      "Runs tests under the DIRECTORY.",
-      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
-    ],
-    "options":[
-      ["h","help",false,false,"show this help"],
-      ["p","parallel",false,false,"execute the tests in parallel"],
-      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-      ["","test-reportdir",true,[],"write test reports under the specified directory"]
-    ],
-    "examples":{
-      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
-    },
-    "references":{
-      "github project": "https://github.com/dakusui/bud"
-    }
-  }'
-var="$(echo "${var}" | jq -crM .)"
-parseopt "${var}"
+#var='{
+#    "usage": "testrunner [OPTION]... [DIRECTORY]",
+#    "description":[
+#      "Runs tests under the DIRECTORY.",
+#      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
+#    ],
+#    "options":[
+#      ["h","help",false,false,"show this help"],
+#      ["p","parallel",false,false,"execute the tests in parallel"],
+#      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+#      ["","test-reportdir",true,[],"write test reports under the specified directory"]
+#    ],
+#    "examples":{
+#      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+#    },
+#    "references":{
+#      "github project": "https://github.com/dakusui/bud"
+#    }
+#  }'
+#var="$(echo "${var}" | jq -crM .)"
+#parseopt "${var}"

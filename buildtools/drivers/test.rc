@@ -3,7 +3,7 @@ function execute_stage() {
   local _report_json _report_file
   mkdir -p "${TESTREPORTDIR}"
   _report_file="${TESTREPORTDIR}/testreport.json"
-  "${EXEC_BASEDIR}/bin/testrunner" "${TESTDIR}" "${_test_filter}" "${TESTREPORTDIR}" | jq . >"${_report_file}"
+  "${EXEC_BASEDIR}/bin/testrunner" --parallel --filter="${_test_filter}" --test-reportdir="${TESTREPORTDIR}" "${TESTDIR}"| jq . >"${_report_file}"
 
   _report_json="$(jq . "${_report_file}")"
   __print_test_report "${_report_json}" "${_test_filter}" "${TESTDIR}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
