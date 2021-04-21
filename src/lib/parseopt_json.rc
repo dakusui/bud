@@ -108,6 +108,41 @@ function parseopt() {
   jq -ncrM --argjson opts "${_ret}" --argjson rest "${_rest}" '{"opts":$opts,"rest":$rest}'
 }
 
+function parseopt_string_value_for() {
+  local _long_opt_name="${1}" _parsed_opts_json="${2}" _fallback_value="${3:-$(void_value)}"
+  local _arr _ret
+  mapfile -t _arr < <(parseopt_array_value_for "${_long_opt_name}" "${_parsed_opts_json}")
+  if [[ "${#_arr[@]}" == 0 ]]; then
+    if is_void_value "${_fallback_value}"; then
+      abort "The value for '${_long_opt_name}' is missing."
+    fi
+    _ret="${_fallback_value}"
+  else
+    _ret="${_arr[0]}"
+  fi
+  echo "${_ret}"
+}
+
+function parseopt_rest_values() {
+  local _parsed_opts_json="${1}"
+  json_value_at '.rest[]' "${_parsed_opts_json}"
+}
+
+function parseopt_array_value_for() {
+  local _long_opt_name="${1}" _parsed_opts_json="${2}"
+  __bud__parseopt_value_for "${_long_opt_name}" "${_parsed_opts_json}" | jq -cr '.[]'
+}
+
+function parseopt_boolean_value_for() {
+  local _long_opt_name="${1}" _parsed_opts_json="${2}"
+  __bud__parseopt_value_for "${_long_opt_name}" "${_parsed_opts_json}"
+}
+
+function __bud__parseopt_value_for() {
+  local _long_opt_name="${1}" _parsed_opts_json="${2}"
+  json_value_at '.opts."'"${_long_opt_name}"'"' "${_parsed_opts_json}"
+}
+
 function print_usage() {
   local _spec_json="${1}"
   echo "Usage: $(json_value_at '.usage' "${_spec_json}")"
@@ -116,6 +151,11 @@ function print_usage() {
   echo ""
   local _options _i
   mapfile -t _options < <(json_value_at '.options[]' "${_spec_json}")
+  local _w _i
+  _w="$(for _i in "${_options[@]}"; do
+    echo "${_i}" | jq '.[1]' | awk '{print length}'
+  done | sort -n -c | head --lines=1)"
+  local _i
   for _i in "${_options[@]}"; do
     local _s
     _s="$(json_value_at '.[0]' "${_i}")"
@@ -124,7 +164,7 @@ function print_usage() {
     else
       _s="-${_s},"
     fi
-    printf " %3s %-24s %s (default:%s)\n" "${_s}" "--$(json_value_at '.[1]' "${_i}")" "$(json_value_at '.[4]' "${_i}")" "$(json_value_at '.[3]' "${_i}")"
+    printf " %3s %-$((_w + 2))s %s (default:%s)\n" "${_s}" "--$(json_value_at '.[1]' "${_i}")" "$(json_value_at '.[4]' "${_i}")" "$(json_value_at '.[3]' "${_i}")"
   done
   echo
   echo "Examples:"
@@ -132,8 +172,8 @@ function print_usage() {
   mapfile -t _examples < <(json_value_at '.examples|keys[]' "${_spec_json}")
   local _w
   _w="$(for _i in _examples[@]; do
-    echo "${_i}" | awk '{print length}' | sort -r -c | head --lines=1
-  done)"
+    echo "${_i}" | awk '{print length}'
+  done | sort -n -c | head --lines=1)"
   for _i in "${_examples[@]}"; do
     local _v
     _v="$(json_value_at '.examples."'"${_i}"'"' "${_spec_json}")"

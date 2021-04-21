@@ -4,6 +4,26 @@ shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
 source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/bud.rc"
 
+TESTRUNNER_SPECIFICATION='{
+    "usage": "testrunner [OPTION]... [DIRECTORY]",
+    "description":[
+      "Runs tests under the DIRECTORY.",
+      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
+    ],
+    "options":[
+      ["h","help",false,false,"show this help"],
+      ["p","parallel",false,false,"execute the tests in parallel"],
+      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+      ["","test-reportdir",true,[],"write test reports under the specified directory"]
+    ],
+    "examples":{
+      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+    },
+    "references":{
+      "github project": "https://github.com/dakusui/bud"
+    }
+  }'
+
 function list_tests() {
   local _test_rootdir="${1%/}"
   find "${_test_rootdir}" -name '*.json' -or -name '*.sh' |
@@ -204,26 +224,14 @@ function run_tests() {
 
 function main() {
   local _parsed_opts_json
-  _parsed_opts_json="$(parseopt '{
-    "usage": "testrunner [OPTION]... [DIRECTORY]",
-    "description":[
-      "Runs tests under the DIRECTORY.",
-      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
-    ],
-    "options":[
-      ["h","help",false,false,"show this help"],
-      ["p","parallel",false,false,"execute the tests in parallel"],
-      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-      ["","test-reportdir",true,[],"write test reports under the specified directory"]
-    ],
-    "examples":{
-      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
-    },
-    "references":{
-      "github project": "https://github.com/dakusui/bud"
-    }
-  }' "${@}")"
+  _parsed_opts_json="$(parseopt "${TESTRUNNER_SPECIFICATION}" "${@}")"
   debug "_parsed_opts_json: '${_parsed_opts_json}'"
+  local _help
+  _help="$(parseopt_boolean_value_for 'help' "${_parsed_opts_json}")"
+  if [[ "${_help}" == true ]]; then
+    print_usage "${TESTRUNNER_SPECIFICATION}"
+    return 0
+  fi
   local _is_parallel _filter _test_rootdir _test_reportdir _rest
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
   if [[ "${#_test_rootdir[@]}" == 0 ]]; then
@@ -237,41 +245,6 @@ function main() {
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
   run_tests "${_test_rootdir[0]}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
-}
-
-function parseopt_string_value_for() {
-  local _long_opt_name="${1}" _parsed_opts_json="${2}" _fallback_value="${3:-$(void_value)}"
-  local _arr _ret
-  mapfile -t _arr < <(parseopt_array_value_for "${_long_opt_name}" "${_parsed_opts_json}")
-  if [[ "${#_arr[@]}" == 0 ]]; then
-    if is_void_value "${_fallback_value}"; then
-      abort "The value for '${_long_opt_name}' is missing."
-    fi
-    _ret="${_fallback_value}"
-  else
-    _ret="${_arr[0]}"
-  fi
-  echo "${_ret}"
-}
-
-function parseopt_rest_values() {
-  local _parsed_opts_json="${1}"
-  json_value_at '.rest[]' "${_parsed_opts_json}"
-}
-
-function parseopt_array_value_for() {
-  local _long_opt_name="${1}" _parsed_opts_json="${2}"
-  __bud__parseopt_value_for "${_long_opt_name}" "${_parsed_opts_json}" | jq -cr '.[]'
-}
-
-function parseopt_boolean_value_for() {
-  local _long_opt_name="${1}" _parsed_opts_json="${2}"
-  __bud__parseopt_value_for "${_long_opt_name}" "${_parsed_opts_json}"
-}
-
-function __bud__parseopt_value_for() {
-  local _long_opt_name="${1}" _parsed_opts_json="${2}"
-  json_value_at '.opts."'"${_long_opt_name}"'"' "${_parsed_opts_json}"
 }
 
 main "${@}"
