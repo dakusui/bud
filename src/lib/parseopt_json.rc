@@ -153,8 +153,8 @@ function print_usage() {
   mapfile -t _options < <(json_value_at '.options[]' "${_spec_json}")
   local _w _i
   _w="$(for _i in "${_options[@]}"; do
-    echo "${_i}" | jq '.[1]' | awk '{print length}'
-  done | sort -n -c | head --lines=1)"
+    echo "${_i}" | jq -crM '.[1]' | awk '{print length}'
+  done | sort -n -r | head --lines=1)"
   local _i
   for _i in "${_options[@]}"; do
     local _s
@@ -164,20 +164,29 @@ function print_usage() {
     else
       _s="-${_s},"
     fi
-    printf " %3s %-$((_w + 2))s %s (default:%s)\n" "${_s}" "--$(json_value_at '.[1]' "${_i}")" "$(json_value_at '.[4]' "${_i}")" "$(json_value_at '.[3]' "${_i}")"
+    local _default="" _with_value
+    _with_value="$(echo "${_i}"| jq -crM '.[2]')"
+    if [[ "${_with_value}" == true ]]; then
+      local _v
+      mapfile -t _v < <(json_value_at '.[3][]' "${_i}")
+      if [[ "${#_v[@]}" -gt 0 ]]; then
+        _default="(default:'${_v[0]}')"
+      fi
+    fi
+    printf " %3s %-$((_w + 2))s %s%s\n" "${_s}" "--$(json_value_at '.[1]' "${_i}")" "$(json_value_at '.[4]' "${_i}")" "${_default}"
   done
   echo
   echo "Examples:"
   local _examples
   mapfile -t _examples < <(json_value_at '.examples|keys[]' "${_spec_json}")
-  local _w
-  _w="$(for _i in _examples[@]; do
-    echo "${_i}" | awk '{print length}'
-  done | sort -n -c | head --lines=1)"
-  for _i in "${_examples[@]}"; do
+  local _w=0
+  _w="$(for _i in "${_examples[@]}"; do
+      echo "${_i}" | awk '{print length}'
+  done | sort -n -r | head --lines=1)"
+    for _i in "${_examples[@]}"; do
     local _v
     _v="$(json_value_at '.examples."'"${_i}"'"' "${_spec_json}")"
-    printf "  %-${_w}s  %s\n" "${_i}" "${_v}"
+    printf "  %-${_w}s %s\n" "${_i}" "${_v}"
   done
   echo
   local _references

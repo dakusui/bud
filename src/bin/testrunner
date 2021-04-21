@@ -17,6 +17,7 @@ TESTRUNNER_SPECIFICATION='{
       ["","test-reportdir",true,[],"write test reports under the specified directory"]
     ],
     "examples":{
+      "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
       "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
     },
     "references":{
