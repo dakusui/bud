@@ -8,13 +8,17 @@ TESTRUNNER_SPECIFICATION='{
     "usage": "testrunner [OPTION]... [DIRECTORY]",
     "description":[
       "Runs tests under the DIRECTORY.",
-      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given"
+      "Tests are copied under a working directory (--test-workdir), compiled, and then executed.",
+      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given."
     ],
     "options":[
       ["h","help",false,false,"show this help"],
       ["p","parallel",false,false,"execute the tests in parallel"],
+      ["c","compile",true,[".cmd_unit"],"compile tests (.yaml++,.json++) in DIRECTORY and place the compiled files under the specified directory"],
       ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-      ["","test-reportdir",true,[],"write test reports under the specified directory"]
+      ["","test-reportdir",true,[],"write test reports under the specified directory"],
+      ["","test-workdir",true,[],""],
+      ["","output-format",true,["json"],"write test reports in specified format"]
     ],
     "examples":{
       "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
@@ -25,11 +29,76 @@ TESTRUNNER_SPECIFICATION='{
     }
   }'
 
-function list_tests() {
-  local _test_rootdir="${1%/}"
-  find "${_test_rootdir}" -name '*.json' -or -name '*.sh' |
+function prepare_tests() {
+  local _srcdir="${1}" _outdir="${2}" _is_parallel="${3}"
+  # Create a directory for output.
+  mkdir -p "${_outdir}"
+  # Copy contents in srcdir to outdir
+  cp -r "${_srcdir}"/* "${_outdir}"/
+  # Compile tests
+  __compile_tests "${_outdir}" "${_is_parallel}"
+}
+
+function __list_test_sources_by_extension() {
+  local _workdir="${1%/}" _extension="${2}"
+  find "${_workdir}" -name '*.'"${_extension}" |
+    grep -E '(test-.+|.*-test|test)'"\.${_extension}" |
+    sed -r 's!'"${_workdir}/"'!!' |
+    sort
+}
+
+function __compile_tests() {
+  local _workdir="${1}" _is_parallel="${2}"
+  local _source_files _i
+  message "Processing 'yaml++' files: (Converting them into 'json++' files)"
+  ensure_no_bg_jobs
+  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" ".yaml++")
+  for _i in "${_source_files[@]}"; do
+    message "- '${_i}'"
+    if [[ "${_is_parallel}" == true ]]; then
+      yaml2json "${_i}" >"${_i%.yaml++}.json++" &
+    else
+      yaml2json "${_i}" >"${_i%.yaml++}.json++"
+    fi
+  done
+  wait_for_jobs
+  message "Done."
+
+  message "Processing 'yaml' files: (Converting them into 'json' files)"
+  ensure_no_bg_jobs
+  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" ".yaml++")
+  for _i in "${_source_files[@]}"; do
+    message "- '${_i}'"
+    if [[ "${_is_parallel}" == true ]]; then
+      yaml2json "${_i}" >"${_i%.yaml}.json" &
+    else
+      yaml2json "${_i}" >"${_i%.yaml}.json"
+    fi
+  done
+  wait_for_jobs
+  message "Done."
+
+  message "Processing 'json++' files: (Converting them into 'json' files)"
+  ensure_no_bg_jobs
+  mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" ".yaml++")
+  export JF_PATH="${TESTDIR}"
+  for _i in "${_source_files[@]}"; do
+    message "- '${_i}'"
+    if [[ "${_is_parallel}" == true ]]; then
+      jq-front "${_i}" >"${_i%++}" &
+    else
+      jq-front "${_i}" >"${_i%++}" &
+    fi
+  done
+  wait_for_jobs
+  message "Done."
+}
+
+function list_executable_tests() {
+  local _workdir="${1%/}"
+  find "${_workdir}" -name '*.json' -or -name '*.sh' |
     grep -E '(test-.+|.*-test|test)(\.sh|\.json)' |
-    sed -r 's!'"${_test_rootdir}/"'!!' |
+    sed -r 's!'"${_workdir}/"'!!' |
     sort
 }
 
@@ -79,6 +148,10 @@ function __is_valid() {
     _exit_code=1
   }
   return "${_exit_code}"
+}
+
+function __generate_session_id() {
+  date "+%Y-%m-%d.%H-%M-%S.%N"
 }
 
 #   _run
@@ -155,14 +228,14 @@ function run_each_test() {
 }
 
 function run_tests() {
-  local _test_rootdir="${1:?Test Root Directory is missing.}"
-  local _test_filter="${2:-.*}"
-  local _test_reportdir="${3:-${_test_rootdir}}"
+  local _test_rootdir="${1:?Test root directory is missing.}"
+  local _test_filter="${2:?Filter is missing}"
+  local _test_reportdir="${3:?Teset report directory is missing}"
   local _parallel="${4:-true}"
   _test_rootdir="${_test_rootdir%/}"
   local -a _tests
   info_begin "_test_rootdir: '${_test_rootdir}'; _test_filter: '${_test_filter}'; _test_reportdir: '${_test_reportdir}'"
-  mapfile -t _tests < <(list_tests "${_test_rootdir}" | grep -E "${_test_filter}" || abort "Failed to list tests in directory:'${_test_rootdir}' with filter: '${_test_filter}'")
+  mapfile -t _tests < <(list_executable_tests "${_test_rootdir}" | grep -E "${_test_filter}" || abort "Failed to list tests in directory:'${_test_rootdir}' with filter: '${_test_filter}'")
   [[ "${#_tests[@]}" -gt 0 ]] || abort "No available tests.: (directory: '${_test_rootdir}', filter: '${_test_filter}')"
   local _passed=0 _skipped=0 _failed=0 _error=0 _run=0 _numtests=0 _test_results=()
   local _i _parallel_execution=""
@@ -235,7 +308,8 @@ function main() {
     print_usage "${TESTRUNNER_SPECIFICATION}"
     return 0
   fi
-  local _is_parallel _filter _test_rootdir _test_reportdir _rest
+  local _is_parallel _filter _test_rootdir _test_reportdir _rest _workdir _session_id
+  _session_id="$(__generate_session_id)"
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
   if [[ "${#_test_rootdir[@]}" == 0 ]]; then
     abort "Test root directory was missing."
@@ -246,7 +320,9 @@ function main() {
 
   _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
+  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" "${HOME}/.bud/${_session_id}")"
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
+
   run_tests "${_test_rootdir[0]}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
 }
 
