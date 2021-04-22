@@ -1,0 +1,4 @@
+function execute_stage() {
+  message "You are now in bash shell. Type CTRL-D to quit."
+  docker run -v "$(pwd):/var/lib/cmd-unit$(pwd)" -i --entrypoint="/bin/bash" "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot"
+}

@@ -4,11 +4,12 @@ shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
 BUD_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud"
 APP_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
+CMD_UNIT_BASEDIR=${CMD_UNIT_BASEDIR:-""}
+
 export BUD_HOME
 export APP_HOME
 source "${BUD_HOME}/lib/bud.rc"
 source "${APP_HOME}/lib/cmd_unit.rc"
-
 
 TESTRUNNER_SPECIFICATION='{
     "usage": "testrunner [OPTION]... [DIRECTORY]",
@@ -91,7 +92,7 @@ function __compile_tests() {
   ensure_no_bg_jobs
   mapfile -t _source_files < <(__list_test_sources_by_extension "${_workdir}" "json\+\+")
   local _pwd
-  _pwd="$(pwd)"
+  _pwd="${CMD_UNIT_BASEDIR}$(pwd)"
   export JF_PATH="${_pwd}:${_workdir}"
   for _i in "${_source_files[@]}"; do
     info "- '${_i}'"
@@ -101,6 +102,7 @@ function __compile_tests() {
       jq-front "${_workdir}/${_i}" >"${_workdir}/${_i%++}" &
     fi
   done
+  find "${_workdir}"
   wait_for_jobs
   info_end "Done."
 }
@@ -322,6 +324,11 @@ function main() {
   local _is_parallel _filter _test_rootdir _test_reportdir _rest _workdir _session_id
   _session_id="$(__generate_session_id)"
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
+  mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
+    _i="$(realpath -m "${_i}")"
+    _i="${CMD_UNIT_BASEDIR}${_i}"
+    echo "${_i}"
+  done)
   if [[ "${#_test_rootdir[@]}" == 0 ]]; then
     abort "Test root directory was missing."
   fi

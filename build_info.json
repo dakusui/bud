@@ -1,6 +1,9 @@
 {
   "appName": "cmd-unit",
   "homepage": "https://github.com/dakusui/bud",
+  "docker": {
+    "user": "dakusui"
+  },
   "version": {
     "latestReleased": {
       "major": 0,

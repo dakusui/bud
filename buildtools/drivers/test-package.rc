@@ -1,0 +1,4 @@
+function execute_stage() {
+  # TODO
+  docker run --env CMD_UNIT_BASEDIR="/var/lib/cmd-unit$(pwd)" -v "$(pwd):/var/lib/cmd-unit$(pwd)" -i "dakusui/cmd-unit:v1.0-snapshot" src/test/scripts
+}
