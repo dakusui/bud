@@ -37,7 +37,7 @@ function __execute_stage() {
 
 function main() {
   if [[ $# == 0 ]]; then
-    main clean prepare doc test-compile test
+    main clean prepare doc test
     return 0
   fi
   if [[ ${1} == DOC ]]; then

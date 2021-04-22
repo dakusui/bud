@@ -1,7 +1,7 @@
 "${__BUD__CMD_UNIT_RC:-false}" && return 0
 readonly __BUD__CMD_UNIT_RC=true
 
-source "$(dirname "${BASH_SOURCE[0]}")/cmd_json.rc"
+source "${BUD_HOME:?You must set the BUD_HOME environment variable}/lib/bud.rc"
 
 function run_test_json() {
   local _json_object="${1}"

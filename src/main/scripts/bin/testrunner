@@ -2,7 +2,13 @@
 set -eu -o pipefail -o errtrace
 shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
-source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/bud.rc"
+BUD_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud"
+APP_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
+export BUD_HOME
+export APP_HOME
+source "${BUD_HOME}/lib/bud.rc"
+source "${APP_HOME}/lib/cmd_unit.rc"
+
 
 TESTRUNNER_SPECIFICATION='{
     "usage": "testrunner [OPTION]... [DIRECTORY]",
@@ -173,13 +179,13 @@ function run_each_test() {
   info_begin "'${1}'"
   if [[ "${_testname}" == *.sh ]]; then
     info "Test type: 'scripttest'"
-    __run_each_test_test_driver_name="${BUD_LIB}/testdrivers/scripttest.rc"
+    __run_each_test_test_driver_name="${APP_HOME}/lib/testdrivers/scripttest.rc"
   elif [[ "${_testname}" == *.json ]]; then
     local _content _test_type
     _content=$(cat "${_testdir}/${_testname}")
     _test_type="$(echo "${_content}" | jq -crM '.type')"
     info "Test type: 'JSON:${_test_type}'"
-    __run_each_test_test_driver_name="${BUD_LIB}/testdrivers/json_${_test_type}.rc"
+    __run_each_test_test_driver_name="${APP_HOME}/lib/testdrivers/json_${_test_type}.rc"
   else
     abort "Unsupported test type: '${_testname}'"
   fi

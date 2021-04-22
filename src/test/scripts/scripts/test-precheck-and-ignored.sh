@@ -1,4 +1,4 @@
-source "${BUD_LIB}/bud.rc"
+source "${APP_HOME}/lib/cmd_unit.rc"
 
 export BUD_DEBUG=enabled
 
