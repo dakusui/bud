@@ -102,7 +102,6 @@ function __compile_tests() {
       jq-front "${_workdir}/${_i}" >"${_workdir}/${_i%++}" &
     fi
   done
-  find "${_workdir}"
   wait_for_jobs
   info_end "Done."
 }
@@ -305,8 +304,10 @@ function run_tests() {
     --argjson failed "${_failed}" \
     --argjson error "${_error}" \
     --argjson skipped "${_skipped}" \
+    --arg test_filter "${_test_filter}" \
+    --arg testdir "${_test_rootdir}" \
     --argjson test_results "${_test_results_json}" \
-    '{"wasSuccessful":$was_successful,"report":{"summary":{"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
+    '{"wasSuccessful":$was_successful,"report":{"summary":{"filter":$test_filter,"testdirs":[$testdir],"all":$numtests,"run":$run,"skipped":$skipped,"passed":$passed,"failed":$failed,"error":$error},"test_results":$test_results}}')"
   echo "${_ret}"
   info_end
 }
