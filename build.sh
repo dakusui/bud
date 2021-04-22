@@ -23,7 +23,7 @@ function __execute_stage() {
       abort "The driver: '${__execute_stage_driver_filename}' does not define a function 'stage_name'"
     }
     # shellcheck disable=SC1090
-    source "${__execute_stage_driver_filename}"
+    source "${__execute_stage_driver_filename}" || abort "Driver not found: '${__execute_stage_driver_filename}'"
     function stage_name() {
       echo "'${__execute_stage_stage_name}'"
     }

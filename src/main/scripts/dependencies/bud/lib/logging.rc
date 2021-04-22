@@ -72,5 +72,5 @@ function error() {
 
 function __bud__format_caller() {
   local _line="${1:-???}" _function="${2:-unknown}" _file="${3:-unknown file}"
-  printf "%-40s:%-4s (%-40s)" "${_file}" "${_line}" "${_function}"
+  printf "%-50s (%-30s)" "${_file#${PWD}/}:${_line}" "${_function}"
 }
