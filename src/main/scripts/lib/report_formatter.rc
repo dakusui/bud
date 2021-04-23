@@ -141,6 +141,7 @@ function __find_defect_stage() {
   _precheck="$(json_value_at '.report.result.precheck' "${_result_json_object}")"
   if [[ "${_precheck}" != true ]]; then
     echo "precheck"
+    return 0
   fi
   echo "execution"
 }

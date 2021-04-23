@@ -4,12 +4,12 @@ shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
 BUD_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud"
 APP_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
-CMD_UNIT_BASEDIR=${CMD_UNIT_BASEDIR:-""}
 
 export BUD_HOME
 export APP_HOME
 source "${BUD_HOME}/lib/bud.rc"
 source "${APP_HOME}/lib/cmd_unit.rc"
+source "${APP_HOME}/lib/env.rc"
 
 TESTRUNNER_SPECIFICATION='{
     "usage": "testrunner [OPTION]... [DIRECTORY]",
@@ -163,7 +163,7 @@ function __compile_tests() {
   __process_yaml_files "${_workdir}" "${_is_parallel}" "${_filter}"
 
   local _pwd
-  _pwd="${CMD_UNIT_BASEDIR}$(pwd)"
+  _pwd="${CMD_UNIT_DOCKERDIR_PREFIX}$(pwd)"
   export JF_PATH="${_pwd}:${_workdir}"
   __process_jsonpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
 }
@@ -196,7 +196,7 @@ function __execute_test_stage() {
   local _result_json _ret
   info_begin "__execute_test_stage: ${_stage_name}: (${_testname})"
   _result_json="$("${_stage_name}_test" "${_testname}" "${_testdir}" 2>"${_errout}")" || {
-    _error "DRIVER ERROR DETECTED: '${_stage_name}_test' in $(test_driver_name)"
+    error "DRIVER ERROR DETECTED: '${_stage_name}_test' in $(test_driver_name)"
   }
   debug "_result_json: '${_result_json}'"
   if (__is_valid "${_result_json}" "${_attr_name}"); then
@@ -239,16 +239,60 @@ __run_each_test_test_driver_name="unknown"
 function run_each_test() {
   local _testname="${1}" _testdir="${2}" _testreportdir="${3}"
   local _precheck_result_file _execution_result_file
+  local _test_result_json
+  _test_result_json="$(jq -ncrM --arg v "${_testname}" '
+      {
+        "report": {
+          "result": {
+            "precheck": null,
+            "success": null,
+            "exitCode": {
+              "success": null,
+              "messages": []
+            },
+            "stdout": {
+              "success": null,
+              "messages": []
+            },
+            "stderr": {
+              "success": null,
+              "messages": []
+            }
+          },
+          "precheck": {
+            "exitCode": [],
+            "script": [],
+            "stdout": [],
+            "stderr": []
+          },
+          "execution": {
+            "exitCode": [],
+            "script": [],
+            "stdout": [],
+            "stderr": []
+          }
+        },
+        "name": $v
+      }')"
   info_begin "'${1}'"
   if [[ "${_testname}" == *.sh ]]; then
     info "Test type: 'scripttest'"
-    __run_each_test_test_driver_name="${APP_HOME}/lib/testdrivers/scripttest.rc"
+    if [[ -e "${CMD_UNIT_CONFDIR}/testdrivers/scripttest.rc" ]]; then
+      __run_each_test_test_driver_name="${CMD_UNIT_CONFDIR}/testdrivers/scripttest.rc"
+    else
+      __run_each_test_test_driver_name="${APP_HOME}/lib/testdrivers/scripttest.rc"
+    fi
   elif [[ "${_testname}" == *.json ]]; then
     local _content _test_type
     _content=$(cat "${_testdir}/${_testname}")
     _test_type="$(echo "${_content}" | jq -crM '.type')"
     info "Test type: 'JSON:${_test_type}'"
-    __run_each_test_test_driver_name="${APP_HOME}/lib/testdrivers/json_${_test_type}.rc"
+    local _custom_driver="${CMD_UNIT_CONFDIR}/testdrivers/json_${_test_type}.rc"
+    if [[ -e "${_custom_driver}" ]]; then
+      __run_each_test_test_driver_name="${_custom_driver}"
+    else
+      __run_each_test_test_driver_name="${APP_HOME}/lib/testdrivers/json_${_test_type}.rc"
+    fi
   else
     abort "Unsupported test type: '${_testname}'"
   fi
@@ -256,10 +300,16 @@ function run_each_test() {
   ####
   info_begin "Loading: '${__run_each_test_test_driver_name}'"
   # shellcheck disable=SC1090
-  source "${__run_each_test_test_driver_name}"
-  local _exit_code=$?
-  [[ ${_exit_code} == 0 ]] || abort "Failed to load a test driver: '${__run_each_test_test_driver_name}'"
-  info_end "Loaded: exit_code: '${_exit_code}'"
+  source "${__run_each_test_test_driver_name}" || {
+    # .report.result.exitCode isn't the ideal place to describe the driver loading failure
+    # but there's no any better place as of now.
+    local _err
+    _err="$(jq -ncrM '{"report":{"result":{"exitCode":{"messages":["'"Failed to load driver for <${_testname}>(driver: <${__run_each_test_test_driver_name}>, config directory: <${CMD_UNIT_CONFDIR}>)"'"]}}}}')"
+    json_object_merge "${_test_result_json}" "$_err"
+    info_end "Driver loading failed: '${_testname}': '${__run_each_test_test_driver_name}'"
+    return 0
+  }
+  info_end "Loaded."
   __run_each_test_dir="${_testreportdir}/${_testname%.sh}-output"
   function bud__directory_for_output() {
     echo "${__run_each_test_dir}"
@@ -281,9 +331,7 @@ function run_each_test() {
   touch "${_execution_result_file}"
   ####
 
-  local _test_result_json
   local _precheck_result _precheck_result_json_boolean='{}'
-  _test_result_json="$(jq -ncrM --arg v "${_testname}" '{"name":$v}')"
   _precheck_result="$(precheck_each_test "${_testname}" "${_testdir}" "${_precheck_result_file}")"
   debug "_precheck_result: '${_precheck_result}'"
   _precheck_result_json_boolean="$(echo "${_precheck_result}" | jq -crM '.report.result.precheck')"
@@ -293,10 +341,10 @@ function run_each_test() {
     debug "trying to execute: '${_testname}'"
     _execution_result="$(execute_each_test "${_testname}" "${_testdir}" "${_execution_result_file}")"
     debug "_execution_result: '${_execution_result}'"
-    _test_result_json="$(json_object_merge "${_execution_result}" "${_test_result_json}")"
+    _test_result_json="$(json_object_merge "${_test_result_json}" "${_execution_result}")"
   fi
+  _test_result_json="$(json_object_merge "${_test_result_json}" "${_precheck_result}" )"
   debug "_test_result_json: '${_test_result_json}'"
-  _test_result_json="$(json_object_merge "${_precheck_result}" "${_test_result_json}")"
   echo "${_test_result_json}" | jq -crM .
   info_end "${1}"
 }
@@ -324,7 +372,7 @@ function run_tests() {
     fi
     _test_result_files+=("${_each_test_result_file}")
   done
-  wait_for_jobs
+  wait_for_jobs || error "Some tests are failed. Inspect the test report."
 
   _numtests="${#_tests[@]}"
   for _i in "${_test_result_files[@]}"; do
@@ -389,7 +437,7 @@ function main() {
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
   mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
     _i="$(realpath -m "${_i}")"
-    _i="${CMD_UNIT_BASEDIR}${_i}"
+    _i="${CMD_UNIT_DOCKERDIR_PREFIX}${_i}"
     echo "${_i}"
   done)
   if [[ "${#_test_rootdir[@]}" == 0 ]]; then
@@ -401,7 +449,7 @@ function main() {
 
   _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
-  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" ".bud/sessions/${_session_id}")"
+  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" "${CMD_UNIT_SESSIONSDIR}/${_session_id}")"
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
 
   prepare_tests "${_test_rootdir[0]}" "${_workdir}" "${_is_parallel}" "${_filter}"

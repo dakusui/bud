@@ -30,7 +30,8 @@ function wait_for_jobs() {
     }
   done
   if [[ "${_all_passed}" == false ]]; then
-    abort "Some jobs did not finish correctly."
+    error "Some jobs did not finish correctly."
+    return 1
   fi
   return 0
 }
