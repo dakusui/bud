@@ -47,6 +47,8 @@ function print_stacktrace() {
 
 function __bud__format_caller_for_stacktrace() {
   local _line="${1:-???}" _function="${2:-unknown}" _file="${3:-unknown file}"
+  _file="${_file/${OUTDIR:-""}/${SRCDIR:-""}}"
+  _file="${_file#${PWD}/}"
   printf "%s:%s (%s)" "${_file}" "${_line}" "${_function}"
 }
 
