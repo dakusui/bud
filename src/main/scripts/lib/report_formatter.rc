@@ -245,6 +245,6 @@ function __format_test_names() {
 }
 
 function __get_report_attr() {
-  local _attr="${1}" _json="${2}"
+  local _attr="${1}" _json_object="${2}"
   printf '%8s:%6s\n' "${_attr^^}" "$(json_value_at ".report.summary.${_attr}" "${_json_object}")"
 }
