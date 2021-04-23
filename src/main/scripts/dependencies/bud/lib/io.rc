@@ -9,5 +9,15 @@ function bud_temp_file() {
   mktemp -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}/${__BUD_SESSION_ID}"
 }
 
+function filter_file() {
+  local _predicate="${1}" _file="${2:-/dev/stdin}"
+  local _each
+  debug "_predicate: '${_predicate}'"
+  while IFS= read -r _each; do
+    eval "${_predicate} && echo '${_each}'"
+  done <"${_file}"
+}
+
+
 mkdir -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}/${__BUD_SESSION_ID}"
 
