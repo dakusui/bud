@@ -92,11 +92,12 @@ function main() {
         --filter="${_filter}" \
         "${_test_srcdir}"
     elif [[ "${_each}" == "run" ]]; then
+      mkdir -p "${_test_reportdir}"
       "${_bindir}/testrunner" "${_parallel_option}" "${_parallel_option}" \
         --test-reportdir="${_test_reportdir}" \
         "${_test_workdir}" |
         tee "${_test_reportdir}/testreport.json" |
-        jq '.|{"wasSuccessful":.wasSuccessful,"summary":.summary}' >&2
+        jq '.|{"wasSuccessful":.wasSuccessful,"summary":.report.summary}' >&2
     elif [[ "${_each}" == "report" ]]; then
       "${_bindir}/reportrenderer" "${_test_reportdir}/testreport.json" |
         tee "${_test_reportdir}/testreport.adoc" >&2

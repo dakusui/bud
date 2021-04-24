@@ -1,25 +1,11 @@
 function execute_stage() {
   local _test_filter=${1:-.*}
-  local _report_file
   export CMD_UNIT_CONFDIR="${TESTDIR}/.cmd_unit"
 
-  "${EXEC_BASEDIR}/bin/testpreprocessor" --parallel \
-    --output-dir="${TESTDIR}" \
+  "${EXEC_BASEDIR}/bin/command-unit" \
+    --parallel \
     --filter="${_test_filter}" \
-    "${TESTDIR}"
-
-  mkdir -p "${TESTREPORTDIR}"
-  _report_file="${TESTREPORTDIR}/testreport.json"
-  "${EXEC_BASEDIR}/bin/testrunner" --parallel \
-    --filter="${_test_filter}" \
-    --test-reportdir="${TESTREPORTDIR}" \
-    "${TESTDIR}" |
-    jq . >"${_report_file}"
-
-  "${EXEC_BASEDIR}/bin/reportrenderer" "${_report_file}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
-  _successful="$(jq '.wasSuccessful' "${_report_file}")"
-  if [[ "${_successful}" != true ]]; then
-    message "'$(stage_name)' was not successful."
-    return 1
-  fi
+    --test-report="${TESTREPORTDIR}" \
+    --test-srcdir="${TESTDIR}" \
+    --test-workdir="${TESTDIR}"
 }

@@ -55,9 +55,8 @@ function __bud__format_caller_for_stacktrace() {
 ####
 # Used when a condition is not met and a program should NOT go on.
 function abort() {
-  local _exit_code=1
-  print_stacktrace "ERROR:" "${@}"
-  exit "${_exit_code}"
+  print_stacktrace "ERROR:(exit code:$?, pipe status: ${PIPESTATUS[*]}): " "${@}"
+  exit 1
 }
 
 trap abort ERR

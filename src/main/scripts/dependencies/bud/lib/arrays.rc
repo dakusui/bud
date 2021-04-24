@@ -20,3 +20,4 @@ function array_contains() {
   local _word="${1}" && shift
   printf '%s\n' "${@}" | grep -q -E '^'"${_word}"'$'
 }
+
