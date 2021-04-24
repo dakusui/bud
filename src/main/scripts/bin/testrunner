@@ -226,15 +226,15 @@ function run_tests() {
   mapfile -t _tests < <(list_executable_tests "${_test_rootdir}" | grep -E "${_test_filter}" || abort "Failed to list tests in directory:'${_test_rootdir}' with filter: '${_test_filter}'")
   [[ "${#_tests[@]}" -gt 0 ]] || abort "No available tests.: (directory: '${_test_rootdir}', filter: '${_test_filter}')"
   local _passed=0 _skipped=0 _failed=0 _error=0 _run=0 _numtests=0 _test_results=()
-  local _i _parallel_execution=""
+  local _i
   local -a _test_result_files=()
   ensure_no_bg_jobs
   for _i in "${_tests[@]}"; do
     _each_test_result_file="$(bud_temp_file)"
     if ${_parallel}; then
-      run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}" ${_parallel_execution} "${_parallel_execution}" >"${_each_test_result_file}" &
+      run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}" >"${_each_test_result_file}" &
     else
-      run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}" ${_parallel_execution} "${_parallel_execution}" >"${_each_test_result_file}"
+      run_each_test "${_i}" "${_test_rootdir}" "${_test_reportdir}" >"${_each_test_result_file}"
     fi
     _test_result_files+=("${_each_test_result_file}")
   done
@@ -302,6 +302,7 @@ function main() {
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
   mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
     _i="$(realpath -m "${_i}")"
+    [[ $? == 0 ]] || abort "Failed to figure out real path of:'${_i}'"
     _i="${CMD_UNIT_DOCKERDIR_PREFIX}${_i}"
     echo "${_i}"
   done)

@@ -13,11 +13,12 @@ function ensure_no_bg_jobs() {
 
 function wait_for_jobs() {
   local _all_passed=true
+  info "Waiting for background jobs."
   while true; do
     local _num_remaining_jobs
     _num_remaining_jobs="$(jobs -l | wc -l)"
     if [[ "${_num_remaining_jobs}" == 0 ]]; then
-      info "No more background jobs"
+      info "No more background jobs."
       break
     fi
     wait -n || {

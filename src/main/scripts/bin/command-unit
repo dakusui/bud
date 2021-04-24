@@ -87,13 +87,16 @@ function main() {
   fi
   for _each in "${_subcommands[@]}"; do
     if [[ "${_each}" == "preprocess" ]]; then
-      "${_bindir}/testpreprocessor" "${_parallel_option}" \
+      "${_bindir}/testpreprocessor"\
+        ${_parallel_option} \
         --output-dir="${_test_workdir}" \
         --filter="${_filter}" \
         "${_test_srcdir}"
     elif [[ "${_each}" == "run" ]]; then
       mkdir -p "${_test_reportdir}"
-      "${_bindir}/testrunner" "${_parallel_option}" "${_parallel_option}" \
+      # _parallel_option is passed to the command without being quoted.
+      "${_bindir}/testrunner" \
+        ${_parallel_option} \
         --test-reportdir="${_test_reportdir}" \
         "${_test_workdir}" |
         tee "${_test_reportdir}/testreport.json" |
