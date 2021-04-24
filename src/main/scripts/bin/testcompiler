@@ -14,13 +14,13 @@ TESTCOMPILER_SPECIFICATION='{
   "usage": "testcompiler [OPTION]... [DIRECTORY]",
   "description":[
     "Compiles tests under the DIRECTORY.",
-    "If --test-workdir option is specified, tests are copied under a working directory (--test-workdir) and then compiled in the directory."
+    "If --output-dir option is specified, tests are copied under a working directory (--output-dir) and then compiled there."
   ],
   "options":[
     ["h","help",false,false,"show this help"],
     ["p","parallel",false,false,"execute the tests in parallel"],
     ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-    ["","test-workdir",true,[],""]
+    ["","output-dir",true,[],""]
   ],
   "examples":{
     "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
@@ -57,9 +57,9 @@ function main() {
 
   _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
-  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
+  _output_dir="$(parseopt_string_value_for 'output-dir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
 
-  prepare_tests "${_test_rootdir[0]}" "${_workdir}" "${_is_parallel}" "${_filter}"
+  prepare_tests "${_test_rootdir[0]}" "${_output_dir}" "${_is_parallel}" "${_filter}"
 }
 
 function prepare_tests() {
@@ -76,60 +76,60 @@ function prepare_tests() {
 }
 
 function __process_yamlpp_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  local _output_dir="${1}" _is_parallel="${2}" _filter="${3}"
   function __process_files_converter() {
     echo "yaml2json"
   }
 
   function __process_files_src() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file}"
+    local _source_file="${1}" _output_dir="${2}"
+    echo "${_output_dir}/${_source_file}"
   }
   function __process_files_dest() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file%.yaml++}".json++
+    local _source_file="${1}" _output_dir="${2}"
+    echo "${_output_dir}/${_source_file%.yaml++}".json++
   }
-  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "yaml++"
+  __process_files "${_output_dir}" "${_is_parallel}" "${_filter}" "yaml++"
   unset -f __process_files_dest
   unset -f __process_files_src
   unset -f __process_files_converter
 }
 
 function __process_yaml_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  local _output_dir="${1}" _is_parallel="${2}" _filter="${3}"
   function __process_files_converter() {
     echo "yaml2json"
   }
 
   function __process_files_src() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file}"
+    local _source_file="${1}" _output_dir="${2}"
+    echo "${_output_dir}/${_source_file}"
   }
   function __process_files_dest() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file%.yaml}".json
+    local _source_file="${1}" _output_dir="${2}"
+    echo "${_output_dir}/${_source_file%.yaml}".json
   }
-  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "yaml"
+  __process_files "${_output_dir}" "${_is_parallel}" "${_filter}" "yaml"
   unset -f __process_files_dest
   unset -f __process_files_src
   unset -f __process_files_converter
 }
 
 function __process_jsonpp_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  local _output_dir="${1}" _is_parallel="${2}" _filter="${3}"
   function __process_files_converter() {
     echo "jq-front"
   }
 
   function __process_files_src() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file}"
+    local _source_file="${1}" _output_dir="${2}"
+    echo "${_output_dir}/${_source_file}"
   }
   function __process_files_dest() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file%++}"
+    local _source_file="${1}" _output_dir="${2}"
+    echo "${_output_dir}/${_source_file%++}"
   }
-  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "json++"
+  __process_files "${_output_dir}" "${_is_parallel}" "${_filter}" "json++"
   unset -f __process_files_dest
   unset -f __process_files_src
   unset -f __process_files_converter
@@ -144,15 +144,15 @@ function __process_files_convert() {
 }
 
 function __process_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}" _extension="${4}"
+  local _output_dir="${1}" _is_parallel="${2}" _filter="${3}" _extension="${4}"
   local _source_files _i
   info_begin "Processing '${_extension}' files"
   ensure_no_bg_jobs
-  mapfile -t _source_files < <(__list_test_sources "${_workdir}" "${_extension}" "${_filter}")
+  mapfile -t _source_files < <(__list_test_sources "${_output_dir}" "${_extension}" "${_filter}")
   for _i in "${_source_files[@]}"; do
     local _cmd _src _dest
-    _src="$(__process_files_src "${_i}" "${_workdir}")"
-    _dest="$(__process_files_dest "${_i}" "${_workdir}")"
+    _src="$(__process_files_src "${_i}" "${_output_dir}")"
+    _dest="$(__process_files_dest "${_i}" "${_output_dir}")"
     if [[ ! -e "${_dest}" || "${_dest}" -ot "${_src}" ]]; then
       info "- '${_i}'"
       _cmd="$(__process_files_convert "${_src}" "${_dest}")"
@@ -170,26 +170,28 @@ function __process_files() {
 }
 
 function __compile_tests() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  local _output_dir="${1}" _is_parallel="${2}" _filter="${3}"
 
-  __process_yamlpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
+  __process_yamlpp_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 
-  __process_yaml_files "${_workdir}" "${_is_parallel}" "${_filter}"
+  __process_yaml_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 
   local _pwd
   _pwd="${CMD_UNIT_DOCKERDIR_PREFIX}$(pwd)"
-  export JF_PATH="${_pwd}:${_workdir}"
-  __process_jsonpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
+  export JF_PATH="${_pwd}:${_output_dir}"
+  __process_jsonpp_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 }
 
 function __list_test_sources() {
-  local _workdir="${1%/}" _extension="${2}" _filter="${3}"
+  local _output_dir="${1%/}" _extension="${2}" _filter="${3}"
   _filter=".*${_filter}.*"
   # shellcheck disable=SC2016
-  find "${_workdir}" -name '*.'"${_extension}" |
+  find "${_output_dir}" -name '*.'"${_extension}" |
     filter_file '[[ "${_each}" =~ (test-.+|.*-test|test) ]]' |
     filter_file '[[ "${_each}" == *.'"${_extension}"' ]]' |
     filter_file '[[ "${_each}" =~ '"${_filter}"' ]]' |
-    sed -r 's!'"${_workdir}/"'!!' |
+    sed -r 's!'"${_output_dir}/"'!!' |
     sort
 }
+
+main "${@}"
