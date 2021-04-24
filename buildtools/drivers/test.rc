@@ -2,6 +2,9 @@ function execute_stage() {
   local _test_filter=${1:-.*}
   local _report_file
   export CMD_UNIT_CONFDIR="${TESTDIR}/.cmd_unit"
+
+  testcompiler -p --output-dir="${TESTDIR}" --filter="${_test_filter}" "${TESTDIR}"
+
   mkdir -p "${TESTREPORTDIR}"
   _report_file="${TESTREPORTDIR}/testreport.json"
   "${EXEC_BASEDIR}/bin/testrunner" --parallel \

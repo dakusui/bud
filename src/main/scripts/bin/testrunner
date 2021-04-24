@@ -321,7 +321,7 @@ function main() {
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
 
   # prepare_tests "${_test_rootdir[0]}" "${_workdir}" "${_is_parallel}" "${_filter}"
-  "$(dirname "${BASH_SOURCE[0]}")/testcompiler" -p --output-dir="${_workdir}" --filter="${_filter}" "${_test_rootdir[0]}"
+  # "$(dirname "${BASH_SOURCE[0]}")/testcompiler" -p --output-dir="${_workdir}" --filter="${_filter}" "${_test_rootdir[0]}"
   run_tests "${_workdir}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
 }
 
