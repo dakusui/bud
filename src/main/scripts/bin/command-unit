@@ -99,6 +99,7 @@ function main() {
       "${_bindir}/testrunner" \
         ${_parallel_option} \
         --test-reportdir="${_test_reportdir}" \
+        --filter="${_filter}" \
         "${_test_workdir}" |
         tee "${_test_reportdir}/testreport.json" |
         jq '.|{"wasSuccessful":.wasSuccessful,"summary":.report.summary}' >&2

@@ -9,6 +9,11 @@ function bud_temp_file() {
   mktemp -p "${TEMP:-/tmp}/bud/${BUD_APP_NAME}/${__BUD_SESSION_ID}"
 }
 
+# Filter files in input by a given predicate
+# Useful when you do not want to get non-zero exit code for no matching input record.
+# Usage:
+#    filter_file '[[ "${_each}" =~ (test-.+|.*-test|test) ]]'
+# Single quotes are necessary.
 function filter_file() {
   local _predicate="${1}" _file="${2:-/dev/stdin}"
   local _each
