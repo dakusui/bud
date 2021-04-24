@@ -10,163 +10,30 @@ export APP_HOME
 source "${BUD_HOME}/lib/bud.rc"
 source "${APP_HOME}/lib/cmd_unit.rc"
 source "${APP_HOME}/lib/env.rc"
+source "$(dirname "${BASH_SOURCE[0]}")/testcompiler"
 
 TESTRUNNER_SPECIFICATION='{
-    "usage": "testrunner [OPTION]... [DIRECTORY]",
-    "description":[
-      "Runs tests under the DIRECTORY.",
-      "Tests are copied under a working directory (--test-workdir), compiled, and then executed.",
-      "The reports are created under the same DIRECTORY unless the --test-reportdir option is given."
-    ],
-    "options":[
-      ["h","help",false,false,"show this help"],
-      ["p","parallel",false,false,"execute the tests in parallel"],
-      ["c","compile",true,[".cmd_unit"],"compile tests (.yaml++,.json++) in DIRECTORY and place the compiled files under the specified directory"],
-      ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-      ["","test-reportdir",true,[],"write test reports under the specified directory"],
-      ["","test-workdir",true,[],""],
-      ["","output-format",true,["json"],"write test reports in specified format"]
-    ],
-    "examples":{
-      "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
-      "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
-    },
-    "references":{
-      "github project": "https://github.com/dakusui/bud"
-    }
-  }'
-
-function prepare_tests() {
-  local _srcdir="${1}" _outdir="${2}" _is_parallel="${3}" _filter="${4}"
-  info "_srcdir: '${_srcdir}'; _outdir: '${_outdir}'; _is_parallel: '${_is_parallel}'; _filter: '${_filter}'"
-  # Copy contents in srcdir to outdir
-  if [[ "${_srcdir}" != "${_outdir}" ]]; then
-    # Create a directory for output.
-    mkdir -p "${_outdir}"
-    cp -r "${_srcdir}"/* "${_outdir}"/ || abort "Failed to copy from '${_srcdir}' to '${_outdir}'"
-  fi
-  # Compile tests
-  __compile_tests "${_outdir}" "${_is_parallel}" "${_filter}"
-}
-
-function __list_test_sources() {
-  local _workdir="${1%/}" _extension="${2}" _filter="${3}"
-  _filter=".*${_filter}.*"
-  # shellcheck disable=SC2016
-  find "${_workdir}" -name '*.'"${_extension}" |
-    filter_file '[[ "${_each}" =~ (test-.+|.*-test|test) ]]' |
-    filter_file '[[ "${_each}" == *.'"${_extension}"' ]]' |
-    filter_file '[[ "${_each}" =~ '"${_filter}"' ]]' |
-    sed -r 's!'"${_workdir}/"'!!' |
-    sort
-}
-
-function __process_yamlpp_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
-  function __process_files_converter() {
-    echo "yaml2json"
+  "usage": "testrunner [OPTION]... [DIRECTORY]",
+  "description":[
+    "Runs tests under the DIRECTORY.",
+    "Tests are copied under a working directory (--test-workdir), compiled, and then executed.",
+    "The reports are created under the same DIRECTORY unless the --test-reportdir option is given."
+  ],
+  "options":[
+    ["h","help",false,false,"show this help"],
+    ["p","parallel",false,false,"execute the tests in parallel"],
+    ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+    ["","test-reportdir",true,[],"write test reports under the specified directory"],
+    ["","test-workdir",true,[],""]
+  ],
+  "examples":{
+    "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
+    "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+  },
+  "references":{
+    "github project": "https://github.com/dakusui/bud"
   }
-
-  function __process_files_src() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file}"
-  }
-  function __process_files_dest() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file%.yaml++}".json++
-  }
-  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "yaml++"
-  unset -f __process_files_dest
-  unset -f __process_files_src
-  unset -f __process_files_converter
-}
-
-function __process_yaml_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
-  function __process_files_converter() {
-    echo "yaml2json"
-  }
-
-  function __process_files_src() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file}"
-  }
-  function __process_files_dest() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file%.yaml}".json
-  }
-  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "yaml"
-  unset -f __process_files_dest
-  unset -f __process_files_src
-  unset -f __process_files_converter
-}
-
-function __process_jsonpp_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
-  function __process_files_converter() {
-    echo "jq-front"
-  }
-
-  function __process_files_src() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file}"
-  }
-  function __process_files_dest() {
-    local _source_file="${1}" _workdir="${2}"
-    echo "${_workdir}/${_source_file%++}"
-  }
-  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "json++"
-  unset -f __process_files_dest
-  unset -f __process_files_src
-  unset -f __process_files_converter
-}
-
-function __process_files_convert() {
-  local _src="${1}" _dest="${2}"
-  printf '%s "%s" >"%s"' \
-    "$(__process_files_converter)" \
-    "${_src}" \
-    "${_dest}"
-}
-
-function __process_files() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}" _extension="${4}"
-  local _source_files _i
-  info_begin "Processing '${_extension}' files"
-  ensure_no_bg_jobs
-  mapfile -t _source_files < <(__list_test_sources "${_workdir}" "${_extension}" "${_filter}")
-  for _i in "${_source_files[@]}"; do
-    local _cmd _src _dest
-    _src="$(__process_files_src "${_i}" "${_workdir}")"
-    _dest="$(__process_files_dest "${_i}" "${_workdir}")"
-    if [[ ! -e "${_dest}" || "${_dest}" -ot "${_src}" ]]; then
-      info "- '${_i}'"
-      _cmd="$(__process_files_convert "${_src}" "${_dest}")"
-      if [[ "${_is_parallel}" == true ]]; then
-        eval "${_cmd}" &
-      else
-        eval "${_cmd}"
-      fi
-    else
-      info "-  '${_i}' (skipped)"
-    fi
-  done
-  wait_for_jobs
-  info_end "Done."
-}
-
-function __compile_tests() {
-  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
-
-  __process_yamlpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
-
-  __process_yaml_files "${_workdir}" "${_is_parallel}" "${_filter}"
-
-  local _pwd
-  _pwd="${CMD_UNIT_DOCKERDIR_PREFIX}$(pwd)"
-  export JF_PATH="${_pwd}:${_workdir}"
-  __process_jsonpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
-}
+}'
 
 function list_executable_tests() {
   local _workdir="${1%/}"
@@ -236,44 +103,46 @@ function __generate_session_id() {
 #   tests[@]
 __run_each_test_dir="out"
 __run_each_test_test_driver_name="unknown"
+# shellcheck disable=SC2016
+__run_each_test_test_result_json_template='{
+  "report": {
+    "result": {
+      "precheck": null,
+      "success": null,
+      "exitCode": {
+        "success": null,
+        "messages": []
+      },
+      "stdout": {
+        "success": null,
+        "messages": []
+      },
+      "stderr": {
+        "success": null,
+        "messages": []
+      }
+    },
+    "precheck": {
+      "exitCode": [],
+      "script": [],
+      "stdout": [],
+      "stderr": []
+    },
+    "execution": {
+      "exitCode": [],
+      "script": [],
+      "stdout": [],
+      "stderr": []
+    }
+  },
+  "name": "%s"
+}'
 function run_each_test() {
   local _testname="${1}" _testdir="${2}" _testreportdir="${3}"
   local _precheck_result_file _execution_result_file
   local _test_result_json
-  _test_result_json="$(jq -ncrM --arg v "${_testname}" '
-      {
-        "report": {
-          "result": {
-            "precheck": null,
-            "success": null,
-            "exitCode": {
-              "success": null,
-              "messages": []
-            },
-            "stdout": {
-              "success": null,
-              "messages": []
-            },
-            "stderr": {
-              "success": null,
-              "messages": []
-            }
-          },
-          "precheck": {
-            "exitCode": [],
-            "script": [],
-            "stdout": [],
-            "stderr": []
-          },
-          "execution": {
-            "exitCode": [],
-            "script": [],
-            "stdout": [],
-            "stderr": []
-          }
-        },
-        "name": $v
-      }')"
+  # shellcheck disable=SC2059
+  _test_result_json="$(printf "${__run_each_test_test_result_json_template}" "${_testname}")"
   info_begin "'${1}'"
   if [[ "${_testname}" == *.sh ]]; then
     info "Test type: 'scripttest'"
@@ -343,7 +212,7 @@ function run_each_test() {
     debug "_execution_result: '${_execution_result}'"
     _test_result_json="$(json_object_merge "${_test_result_json}" "${_execution_result}")"
   fi
-  _test_result_json="$(json_object_merge "${_test_result_json}" "${_precheck_result}" )"
+  _test_result_json="$(json_object_merge "${_test_result_json}" "${_precheck_result}")"
   debug "_test_result_json: '${_test_result_json}'"
   echo "${_test_result_json}" | jq -crM .
   info_end "${1}"

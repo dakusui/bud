@@ -9,3 +9,187 @@ export BUD_HOME
 export APP_HOME
 source "${BUD_HOME}/lib/bud.rc"
 source "${APP_HOME}/lib/env.rc"
+
+TESTCOMPILER_SPECIFICATION='{
+  "usage": "testcompiler [OPTION]... [DIRECTORY]",
+  "description":[
+    "Compiles tests under the DIRECTORY.",
+    "If --test-workdir option is specified, tests are copied under a working directory (--test-workdir) and then compiled in the directory."
+  ],
+  "options":[
+    ["h","help",false,false,"show this help"],
+    ["p","parallel",false,false,"execute the tests in parallel"],
+    ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
+    ["","test-workdir",true,[],""]
+  ],
+  "examples":{
+    "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
+    "testrunner DIR -p": "Run tests found under DIR with the testrunner in parallel mode."
+  },
+  "references":{
+    "github project": "https://github.com/dakusui/bud"
+  }
+}'
+
+function main() {
+  local _parsed_opts_json
+  _parsed_opts_json="$(parseopt "${TESTCOMPILER_SPECIFICATION}" "${@}")"
+  debug "_parsed_opts_json: '${_parsed_opts_json}'"
+  local _help
+  _help="$(parseopt_boolean_value_for 'help' "${_parsed_opts_json}")"
+  if [[ "${_help}" == true ]]; then
+    print_usage "${TESTRUNNER_SPECIFICATION}"
+    return 0
+  fi
+  local _is_parallel _filter _test_rootdir
+  mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
+  mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
+    _i="$(realpath -m "${_i}")"
+    _i="${CMD_UNIT_DOCKERDIR_PREFIX}${_i}"
+    echo "${_i}"
+  done)
+  if [[ "${#_test_rootdir[@]}" == 0 ]]; then
+    abort "Test root directory was missing."
+  fi
+  if [[ "${#_test_rootdir[@]}" -gt 1 ]]; then
+    abort "More than one test directories are specified: '${_test_rootdir[*]}'"
+  fi
+
+  _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
+  _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
+  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
+
+  prepare_tests "${_test_rootdir[0]}" "${_workdir}" "${_is_parallel}" "${_filter}"
+}
+
+function prepare_tests() {
+  local _srcdir="${1}" _outdir="${2}" _is_parallel="${3}" _filter="${4}"
+  info "_srcdir: '${_srcdir}'; _outdir: '${_outdir}'; _is_parallel: '${_is_parallel}'; _filter: '${_filter}'"
+  # Copy contents in srcdir to outdir
+  if [[ "${_srcdir}" != "${_outdir}" ]]; then
+    # Create a directory for output.
+    mkdir -p "${_outdir}"
+    cp -r "${_srcdir}"/* "${_outdir}"/ || abort "Failed to copy from '${_srcdir}' to '${_outdir}'"
+  fi
+  # Compile tests
+  __compile_tests "${_outdir}" "${_is_parallel}" "${_filter}"
+}
+
+function __process_yamlpp_files() {
+  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  function __process_files_converter() {
+    echo "yaml2json"
+  }
+
+  function __process_files_src() {
+    local _source_file="${1}" _workdir="${2}"
+    echo "${_workdir}/${_source_file}"
+  }
+  function __process_files_dest() {
+    local _source_file="${1}" _workdir="${2}"
+    echo "${_workdir}/${_source_file%.yaml++}".json++
+  }
+  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "yaml++"
+  unset -f __process_files_dest
+  unset -f __process_files_src
+  unset -f __process_files_converter
+}
+
+function __process_yaml_files() {
+  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  function __process_files_converter() {
+    echo "yaml2json"
+  }
+
+  function __process_files_src() {
+    local _source_file="${1}" _workdir="${2}"
+    echo "${_workdir}/${_source_file}"
+  }
+  function __process_files_dest() {
+    local _source_file="${1}" _workdir="${2}"
+    echo "${_workdir}/${_source_file%.yaml}".json
+  }
+  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "yaml"
+  unset -f __process_files_dest
+  unset -f __process_files_src
+  unset -f __process_files_converter
+}
+
+function __process_jsonpp_files() {
+  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+  function __process_files_converter() {
+    echo "jq-front"
+  }
+
+  function __process_files_src() {
+    local _source_file="${1}" _workdir="${2}"
+    echo "${_workdir}/${_source_file}"
+  }
+  function __process_files_dest() {
+    local _source_file="${1}" _workdir="${2}"
+    echo "${_workdir}/${_source_file%++}"
+  }
+  __process_files "${_workdir}" "${_is_parallel}" "${_filter}" "json++"
+  unset -f __process_files_dest
+  unset -f __process_files_src
+  unset -f __process_files_converter
+}
+
+function __process_files_convert() {
+  local _src="${1}" _dest="${2}"
+  printf '%s "%s" >"%s"' \
+    "$(__process_files_converter)" \
+    "${_src}" \
+    "${_dest}"
+}
+
+function __process_files() {
+  local _workdir="${1}" _is_parallel="${2}" _filter="${3}" _extension="${4}"
+  local _source_files _i
+  info_begin "Processing '${_extension}' files"
+  ensure_no_bg_jobs
+  mapfile -t _source_files < <(__list_test_sources "${_workdir}" "${_extension}" "${_filter}")
+  for _i in "${_source_files[@]}"; do
+    local _cmd _src _dest
+    _src="$(__process_files_src "${_i}" "${_workdir}")"
+    _dest="$(__process_files_dest "${_i}" "${_workdir}")"
+    if [[ ! -e "${_dest}" || "${_dest}" -ot "${_src}" ]]; then
+      info "- '${_i}'"
+      _cmd="$(__process_files_convert "${_src}" "${_dest}")"
+      if [[ "${_is_parallel}" == true ]]; then
+        eval "${_cmd}" &
+      else
+        eval "${_cmd}"
+      fi
+    else
+      info "-  '${_i}' (skipped)"
+    fi
+  done
+  wait_for_jobs
+  info_end "Done."
+}
+
+function __compile_tests() {
+  local _workdir="${1}" _is_parallel="${2}" _filter="${3}"
+
+  __process_yamlpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
+
+  __process_yaml_files "${_workdir}" "${_is_parallel}" "${_filter}"
+
+  local _pwd
+  _pwd="${CMD_UNIT_DOCKERDIR_PREFIX}$(pwd)"
+  export JF_PATH="${_pwd}:${_workdir}"
+  __process_jsonpp_files "${_workdir}" "${_is_parallel}" "${_filter}"
+}
+
+function __list_test_sources() {
+  local _workdir="${1%/}" _extension="${2}" _filter="${3}"
+  _filter=".*${_filter}.*"
+  # shellcheck disable=SC2016
+  find "${_workdir}" -name '*.'"${_extension}" |
+    filter_file '[[ "${_each}" =~ (test-.+|.*-test|test) ]]' |
+    filter_file '[[ "${_each}" == *.'"${_extension}"' ]]' |
+    filter_file '[[ "${_each}" =~ '"${_filter}"' ]]' |
+    sed -r 's!'"${_workdir}/"'!!' |
+    sort
+}
