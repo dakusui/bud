@@ -20,8 +20,8 @@ CMD_UNIT_SPECIFICATION='{
     "  preprocess:",
     "    Preprocesses test definition files (yaml++, yaml, and json++) and convert them into executable JSON test files",
     "  run:",
-    "    Runs tests under a directory specified by --test-workdir and writes report testreport.json under a directory ",
-    "    specified by --test-reportdir.",
+    "    Runs tests under a directory specified by --test-workdir and writes a report file: testreport.json under a ",
+    "    directory specified by --test-reportdir.",
     "  report:",
     "    Reads a file testreport.json under directory specified by --test-reportdir and renders a report file (testreport.adoc)",
     "    under the same directory."
@@ -44,7 +44,6 @@ CMD_UNIT_SPECIFICATION='{
 }'
 
 function main() {
-  info_begin "command-unit"
   local _parsed_opts_json
   _parsed_opts_json="$(parseopt "${CMD_UNIT_SPECIFICATION}" "${@}")"
   debug "_parsed_opts_json: '${_parsed_opts_json}'"
@@ -54,6 +53,7 @@ function main() {
     print_usage "${CMD_UNIT_SPECIFICATION}"
     return 0
   fi
+  info_begin "command-unit"
   local _default_target_directory _is_parallel _filter _test_reportdir _subcommands _bindir
   _bindir="$(dirname "${BASH_SOURCE[0]}")"
   mapfile -t _subcommands < <(parseopt_rest_values "${_parsed_opts_json}")
