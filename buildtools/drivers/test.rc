@@ -3,7 +3,7 @@ function execute_stage() {
   local _report_file
   export CMD_UNIT_CONFDIR="${TESTDIR}/.cmd_unit"
 
-  "${EXEC_BASEDIR}/bin/testcompiler" --parallel \
+  "${EXEC_BASEDIR}/bin/testpreprocessor" --parallel \
     --output-dir="${TESTDIR}" \
     --filter="${_test_filter}" \
     "${TESTDIR}"
@@ -16,7 +16,7 @@ function execute_stage() {
     "${TESTDIR}" |
     jq . >"${_report_file}"
 
-  "${EXEC_BASEDIR}/bin/reportformatter" "${_report_file}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
+  "${EXEC_BASEDIR}/bin/reportrenderer" "${_report_file}" | tee "${TESTREPORTDIR}/testreport.adoc" >&2
   _successful="$(jq '.wasSuccessful' "${_report_file}")"
   if [[ "${_successful}" != true ]]; then
     message "'$(stage_name)' was not successful."

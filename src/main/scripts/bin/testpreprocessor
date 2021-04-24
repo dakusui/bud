@@ -11,7 +11,7 @@ source "${BUD_HOME}/lib/bud.rc"
 source "${APP_HOME}/lib/env.rc"
 
 TESTCOMPILER_SPECIFICATION='{
-  "usage": "testcompiler [OPTION]... [DIRECTORY]",
+  "usage": "testpreprocessor [OPTION]... [DIRECTORY]",
   "description":[
     "Compiles tests under the DIRECTORY.",
     "If --output-dir option is specified, tests are copied under a working directory (--output-dir) and then compiled there."
@@ -58,6 +58,7 @@ function main() {
   _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
   _output_dir="$(parseopt_string_value_for 'output-dir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
+  _output_dir="$(realpath -m "${_output_dir}")"
 
   prepare_tests "${_test_rootdir[0]}" "${_output_dir}" "${_is_parallel}" "${_filter}"
 }
