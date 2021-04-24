@@ -9,7 +9,6 @@ function execute_stage() {
   _report_file="${TESTREPORTDIR}/testreport.json"
   "${EXEC_BASEDIR}/bin/testrunner" --parallel \
     --filter="${_test_filter}" \
-    --test-workdir="${TESTDIR}" \
     --test-reportdir="${TESTREPORTDIR}" \
     "${TESTDIR}" |
     jq . >"${_report_file}"
