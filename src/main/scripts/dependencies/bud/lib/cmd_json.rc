@@ -65,7 +65,7 @@ function __bud__compose_commandline_from_json_object() {
 
 function __bud__compose_script_from_json_object() {
   local _json_object="${1}"
-  local _i _description _source_files
+  local _i _description
 
   # Print description of the command line to be run.
   mapfile -t _description < <(__bud__get_description_from_json_object "${_json_object}")
@@ -89,12 +89,18 @@ function __bud__compose_script_from_json_object() {
   echo
 
   # Print source directives to "include" files
+  local _source_files
   mapfile -t _source_files < <(__bud__get_source_from_json_object "${_json_object}")
   for _i in "${_source_files[@]}"; do
-    debug "_i: '${_i}'"
     echo "source " "$(quote "${_i}" | envsubst "${_shell_format}")"
   done
+  # Print an empty line for readability
+  echo
 
+  local _environment_variables
+  _environment_variables="$(json_value_at '.environmentVariables' "${_json_object}")"
+  info "_json_object: '${_json_object}'"
+  jq -ncrM --argjson v "${_environment_variables}" '$v|keys[]|[., $v[.]]|"export " + .[0] + "=\"" + .[1] + "\""'
   # Print an empty line for readability
   echo
 

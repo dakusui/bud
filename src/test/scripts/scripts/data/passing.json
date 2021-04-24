@@ -17,6 +17,8 @@
     },
     "source": [
     ],
+    "environmentVariables": {
+    },
     "cmd": ":",
     "args": [
     ]
@@ -36,6 +38,8 @@
     "source": [
       "$BUD_LIB/common.rc"
     ],
+    "environmentVariables": {
+    },
     "cmd": "echo",
     "args": [
       "-e",

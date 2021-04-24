@@ -17,6 +17,8 @@
     },
     "source": [
     ],
+    "environmentVariables": {
+    },
     "cmd": ":",
     "args": [
     ]
@@ -35,6 +37,8 @@
     },
     "source": [
     ],
+    "environmentVariables": {
+    },
     "cmd": "eval:string:$(error 'missing attribute!')",
     "args": [
     ]
