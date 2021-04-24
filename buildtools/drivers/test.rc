@@ -3,7 +3,10 @@ function execute_stage() {
   local _report_file
   export CMD_UNIT_CONFDIR="${TESTDIR}/.cmd_unit"
 
-  "${EXEC_BASEDIR}/bin/testcompiler" --parallel --output-dir="${TESTDIR}" --filter="${_test_filter}" "${TESTDIR}"
+  "${EXEC_BASEDIR}/bin/testcompiler" --parallel \
+    --output-dir="${TESTDIR}" \
+    --filter="${_test_filter}" \
+    "${TESTDIR}"
 
   mkdir -p "${TESTREPORTDIR}"
   _report_file="${TESTREPORTDIR}/testreport.json"
