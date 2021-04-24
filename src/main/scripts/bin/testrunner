@@ -15,15 +15,13 @@ TESTRUNNER_SPECIFICATION='{
   "usage": "testrunner [OPTION]... [DIRECTORY]",
   "description":[
     "Runs tests under the DIRECTORY.",
-    "Tests are copied under a working directory (--test-workdir), compiled, and then executed.",
     "The reports are created under the same DIRECTORY unless the --test-reportdir option is given."
   ],
   "options":[
     ["h","help",false,false,"show this help"],
     ["p","parallel",false,false,"execute the tests in parallel"],
     ["f","filter",true,[".*"],"filter tests with the specified regular expression"],
-    ["","test-reportdir",true,[],"write test reports under the specified directory"],
-    ["","test-workdir",true,[],""]
+    ["","test-reportdir",true,[],"write test reports under the specified directory"]
   ],
   "examples":{
     "testrunner DIR": "Run tests found under DIR with the testrunner in sequential mode.",
@@ -300,8 +298,7 @@ function main() {
     print_usage "${TESTRUNNER_SPECIFICATION}"
     return 0
   fi
-  local _is_parallel _filter _test_rootdir _test_reportdir _rest _workdir _session_id
-  _session_id="$(__generate_session_id)"
+  local _is_parallel _filter _test_rootdir _test_reportdir _rest
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
   mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
     _i="$(realpath -m "${_i}")"
@@ -317,12 +314,9 @@ function main() {
 
   _is_parallel="$(parseopt_boolean_value_for "parallel" "${_parsed_opts_json}")"
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
-  _workdir="$(parseopt_string_value_for 'test-workdir' "${_parsed_opts_json}" "${CMD_UNIT_SESSIONSDIR}/${_session_id}")"
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
 
-  # prepare_tests "${_test_rootdir[0]}" "${_workdir}" "${_is_parallel}" "${_filter}"
-  # "$(dirname "${BASH_SOURCE[0]}")/testcompiler" -p --output-dir="${_workdir}" --filter="${_filter}" "${_test_rootdir[0]}"
-  run_tests "${_workdir}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
+  run_tests "${_test_rootdir[0]}" "${_filter}" "${_test_reportdir}" "${_is_parallel}" "${_rest[@]:1}"
 }
 
 main "${@}"
