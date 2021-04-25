@@ -1,0 +1,19 @@
+function execute_stage() {
+  message "You are now in bash shell. Type CTRL-D to quit."
+}
+
+function execute_stage() {
+  local _test_filter=${1:-.*}
+  export CMD_UNIT_CONFDIR="${TESTDIR}/.cmd_unit"
+  export CMD_UNIT_DOCKERDIR_PREFIX="/var/lib/cmd-unit"
+  __command_unit \
+    --parallel \
+    --filter="${_test_filter}" \
+    --test-report="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTREPORTDIR}" \
+    --test-srcdir="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTDIR}" \
+    --test-workdir="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTDIR}"
+}
+
+function __command_unit() {
+  docker run -v "$(pwd):/var/lib/cmd-unit$(pwd)" -i "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" "${@}"
+}
