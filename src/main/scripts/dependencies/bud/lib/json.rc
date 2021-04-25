@@ -1,7 +1,7 @@
 "${__BUD__JSON_RC:-false}" && return 0
 readonly __BUD__JSON_RC=true
 
-source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
+source "${BUD_LIB:=$(dirname "${BASH_SOURCE[0]}")}/core.rc"
 
 function to_json_array() {
   local _i

@@ -1,9 +1,10 @@
 "${__BUD__PARSEOPT_JSON_RC:-false}" && return 0
 readonly __BUD__PARSEOPT_JSON_RC=true
 
-source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
-source "$(dirname "${BASH_SOURCE[0]}")/json.rc"
-source "$(dirname "${BASH_SOURCE[0]}")/arrays.rc"
+source "${BUD_LIB:="$(dirname "${BASH_SOURCE[0]}")"}/envvars.rc"
+source "${BUD_LIB}/core.rc"
+source "${BUD_LIB}/json.rc"
+source "${BUD_LIB}/arrays.rc"
 
 # Following is an example JSON object that should be passed to
 # the this function as its first argument.

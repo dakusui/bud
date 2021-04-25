@@ -1,5 +1,5 @@
 {
-  "appName": "cmd-unit",
+  "appName": "command-unit",
   "homepage": "https://github.com/dakusui/bud",
   "docker": {
     "user": "dakusui"

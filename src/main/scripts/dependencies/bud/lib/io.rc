@@ -1,7 +1,7 @@
 "${__BUD__IO_RC:-false}" && return 0
 readonly __BUD__IO_RC=true
 
-source "$(dirname "${BASH_SOURCE[0]}")/core.rc"
+source "${BUD_LIB:="$(dirname "${BASH_SOURCE[0]}")"}/core.rc"
 
 __BUD_SESSION_ID=$(date +"%Y-%m-%d_%T-%6N" | sed 's![/:]!-!g')
 
