@@ -1,9 +1,5 @@
+source "$(dirname "$(dirname "${BASH_SOURCE}")")/lib/docker.rc"
+
 function execute_stage() {
   _build "${TARGET_VERSION}-snapshot"
-}
-
-
-function _build() {
-  local _version="${1}"
-  docker build --build-arg VERSION="${_version}" -t "${DOCKER_REPO_NAME}:${_version}" .
 }

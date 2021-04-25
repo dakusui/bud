@@ -1,0 +1,8 @@
+"${__BUILDTOOLS__DOCKER_RC:-false}" && return 0
+readonly __BUILDTOOLS__DOCKER_RC=true
+
+
+function _build() {
+  local _version="${1}"
+  docker build --build-arg VERSION="${_version}" -t "${DOCKER_REPO_NAME}:${_version}" .
+}
