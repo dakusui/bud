@@ -1,0 +1,4 @@
+function execute_stage() {
+  docker login
+  docker push "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot"
+}

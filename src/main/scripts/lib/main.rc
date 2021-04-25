@@ -3,8 +3,8 @@ readonly __CMD_UNIT__MAIN_RC=true
 
 set -eu -o pipefail -o errtrace
 shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
-CMD_UNIT_CONFDIR="${CMD_UNIT_CONFDIR:-"${PWD}/.cmd_unit"}"
 CMD_UNIT_DOCKERDIR_PREFIX=${CMD_UNIT_DOCKERDIR_PREFIX:-""}
+CMD_UNIT_CONFDIR="${CMD_UNIT_CONFDIR:-"${CMD_UNIT_DOCKERDIR_PREFIX}/${PWD}/.cmd_unit"}"
 export CMD_UNIT_CONFDIR
 function define_plugin_functions() {
   function format_log_record() {
@@ -23,9 +23,13 @@ if [[ -e "${CMD_UNIT_CONFDIR}/config.rc" ]]; then
 fi
 BUD_HOME="${BUD_HOME:-$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud}"
 APP_HOME="${APP_HOME:-$(dirname "$(dirname "${BASH_SOURCE[0]}")")}"
+APP_NAME="${APP_NAME:-${PROJECT_NAME:?Project name is not specified.}}"
+BUD_APP_NAME="${APP_NAME}"
+
 export BUD_HOME
 export APP_HOME
-
+export APP_NAME
+export BUD_APP_NAME
 source "${BUD_HOME}/lib/bud.rc"
 
 define_plugin_functions

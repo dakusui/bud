@@ -2,7 +2,6 @@
 
 source "${APP_HOME:="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"}/lib/main.rc"
 
-
 TESTCOMPILER_SPECIFICATION='{
   "usage": "testpreprocessor [OPTION]... [DIRECTORY]",
   "description":[
@@ -38,7 +37,6 @@ function main() {
   mapfile -t _test_rootdir < <(parseopt_rest_values "${_parsed_opts_json}")
   mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
     _i="$(realpath -m "${_i}")"
-    _i="${CMD_UNIT_DOCKERDIR_PREFIX}${_i}"
     echo "${_i}"
   done)
   if [[ "${#_test_rootdir[@]}" == 0 ]]; then
@@ -53,7 +51,10 @@ function main() {
   _output_dir="$(parseopt_string_value_for 'output-dir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
   _output_dir="$(realpath -m "${_output_dir}")"
 
-  prepare_tests "${_test_rootdir[0]}" "${_output_dir}" "${_is_parallel}" "${_filter}"
+  prepare_tests "${_test_rootdir[0]}" \
+    "${_output_dir}" \
+    "${_is_parallel}" \
+    "${_filter}"
 }
 
 function prepare_tests() {
@@ -171,7 +172,7 @@ function __compile_tests() {
   __process_yaml_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 
   local _pwd
-  _pwd="${CMD_UNIT_DOCKERDIR_PREFIX}$(pwd)"
+  _pwd="$(pwd)"
   export JF_PATH="${_pwd}:${_output_dir}"
   __process_jsonpp_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 }

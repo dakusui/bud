@@ -1,22 +1,12 @@
 function execute_stage() {
-  local _test_filter=${1:-.*} _docker="${2:-false}"
-  local _docker_prefix
-  if [[ "${_docker}" == true ]]; then
-    _docker_prefix="/var/lib/cmd-unit"
-    function run_commandunit() {
-      __command_unit_with_docker "${@}"
-    }
-  else
-    _docker_prefix=""
-    function run_commandunit() {
-      __command_unit_native "${@}"
-    }
-  fi
+  message "You are now in bash shell. Type CTRL-D to quit."
+}
 
-  export CMD_UNIT_DOCKERDIR_PREFIX="${_docker_prefix}"
+function execute_stage() {
+  local _test_filter=${1:-.*}
+  export CMD_UNIT_DOCKERDIR_PREFIX="/var/lib/cmd-unit"
   export CMD_UNIT_CONFDIR="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTDIR}/.cmd_unit"
-
-  run_commandunit \
+  __command_unit \
     --parallel \
     --filter="${_test_filter}" \
     --test-report="${TESTREPORTDIR}" \
@@ -24,7 +14,7 @@ function execute_stage() {
     --test-workdir="${TESTDIR}"
 }
 
-function __command_unit_with_docker() {
+function __command_unit() {
   local _me
   _me="$(whoami)"
   docker run \
@@ -36,8 +26,4 @@ function __command_unit_with_docker() {
     -i \
     "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" \
     "${@}"
-}
-
-function __command_unit_native() {
-  "${EXEC_BASEDIR}/bin/command-unit" "${@}"
 }

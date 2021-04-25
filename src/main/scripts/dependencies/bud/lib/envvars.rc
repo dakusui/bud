@@ -14,7 +14,7 @@ BUD_LIB="${BUD_HOME}/lib"
 
 ####
 # The name of the application that sourced this file.
-BUD_APP_NAME="$(basename "$(pwd)")"
+BUD_APP_NAME="${BUD_APP_NAME:-$(basename "$(pwd)")}"
 BUD_APP_NAME="${BUD_APP_NAME%.*}"
 
 BUD_APP_HOME=${BUD_APP_HOME:-"$(pwd)"}
