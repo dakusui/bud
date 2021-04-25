@@ -4,18 +4,26 @@ function execute_stage() {
 
 function execute_stage() {
   local _test_filter=${1:-.*}
-  export CMD_UNIT_CONFDIR="${TESTDIR}/.cmd_unit"
   export CMD_UNIT_DOCKERDIR_PREFIX="/var/lib/cmd-unit"
+  export CMD_UNIT_CONFDIR="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTDIR}/.cmd_unit"
   __command_unit \
     --parallel \
     --filter="${_test_filter}" \
-    --test-report="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTREPORTDIR}" \
-    --test-srcdir="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTDIR}" \
-    --test-workdir="${CMD_UNIT_DOCKERDIR_PREFIX}/${TESTDIR}"
+    --test-report="${TESTREPORTDIR}" \
+    --test-srcdir="${TESTDIR}" \
+    --test-workdir="${TESTDIR}"
 }
 
 function __command_unit() {
   local _me
   _me="$(whoami)"
-  docker run --user="$(id -u "${_me}"):$(id -g "${_me}")" -v "$(pwd):/var/lib/cmd-unit$(pwd)" -i "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" "${@}"
+  docker run \
+    --user="$(id -u "${_me}"):$(id -g "${_me}")" \
+    --env PROJECT_NAME="command-unit" \
+    --env CMD_UNIT_CONFDIR="${CMD_UNIT_CONFDIR}" \
+    --env CMD_UNIT_DOCKERDIR_PREFIX="${CMD_UNIT_DOCKERDIR_PREFIX}" \
+    -v "$(pwd):/var/lib/cmd-unit$(pwd)" \
+    -i \
+    "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" \
+    "${@}"
 }

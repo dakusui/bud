@@ -293,7 +293,6 @@ function main() {
   mapfile -t _test_rootdir < <(for _i in "${_test_rootdir[@]}"; do
     _i="$(realpath -m "${_i}")"
     [[ $? == 0 ]] || abort "Failed to figure out real path of:'${_i}'"
-    _i="${CMD_UNIT_DOCKERDIR_PREFIX}${_i}"
     echo "${_i}"
   done)
   if [[ "${#_test_rootdir[@]}" == 0 ]]; then
@@ -307,7 +306,11 @@ function main() {
   _filter="$(parseopt_string_value_for 'filter' "${_parsed_opts_json}")"
   _test_reportdir="$(parseopt_string_value_for 'test-reportdir' "${_parsed_opts_json}" "${_test_rootdir[0]}")"
 
-  run_tests "${_test_rootdir[0]}" "${_filter}" "${_test_reportdir}" "${_is_parallel}"
+  run_tests \
+    "${_test_rootdir[0]}" \
+    "${_filter}" \
+    "${_test_reportdir}" \
+    "${_is_parallel}"
 }
 
 main "${@}"
