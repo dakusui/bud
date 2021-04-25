@@ -3,7 +3,7 @@
   - base/normal.json
 when:
   description:
-    - Call 'app_name' function.
+    - Call 'void_value' function, which should return a value that represents nothing.
   source:
     - ${BUD_LIB}/core.rc
   cmd: void_value

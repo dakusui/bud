@@ -23,8 +23,10 @@ if [[ -e "${CMD_UNIT_CONFDIR}/config.rc" ]]; then
 fi
 BUD_HOME="${BUD_HOME:-$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud}"
 APP_HOME="${APP_HOME:-$(dirname "$(dirname "${BASH_SOURCE[0]}")")}"
+APP_NAME="${APP_NAME:-${PROJECT_NAME}}"
 export BUD_HOME
 export APP_HOME
+export APP_NAME
 
 source "${BUD_HOME}/lib/bud.rc"
 

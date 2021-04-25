@@ -3,10 +3,6 @@ readonly __BUD__CORE_RC=true
 
 source "${BUD_LIB:="$(dirname "${BASH_SOURCE[0]}")"}/envvars.rc"
 
-function app_name() {
-  echo "${BUD_APP_NAME}"
-}
-
 function is_void_value() {
   if [[ ${1} == "${BUD_VOID}" ]]; then
     return 0

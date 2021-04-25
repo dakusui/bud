@@ -15,5 +15,7 @@ function execute_stage() {
 }
 
 function __command_unit() {
-  docker run -v "$(pwd):/var/lib/cmd-unit$(pwd)" -i "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" "${@}"
+  local _me
+  _me="$(whoami)"
+  docker run --user="$(id -u "${_me}"):$(id -g "${_me}")" -v "$(pwd):/var/lib/cmd-unit$(pwd)" -i "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" "${@}"
 }
