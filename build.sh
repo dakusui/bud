@@ -5,7 +5,6 @@ shopt -s inherit_errexit nullglob # compat"${BASH_COMPAT=42}"
 
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/utils.rc"
 source "$(dirname "${BASH_SOURCE[0]}")/buildtools/build_info.rc"
-source "$(dirname "${BASH_SOURCE[0]}")/buildtools/jq-front.rc"
 
 __execute_stage_driver_filename=
 __execute_stage_stage_name=

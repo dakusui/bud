@@ -1,4 +1,4 @@
 function execute_stage() {
   mkdir -p "${OUTDIR}"
-  cp -r "${SRCDIR}/"* "${OUTDIR}/"
+  cp --preserve -r "${SRCDIR}/"* "${OUTDIR}/"
 }
