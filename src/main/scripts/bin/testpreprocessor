@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
-set -eu -o pipefail -o errtrace
-shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
-BUD_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud"
-APP_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
+source "${APP_HOME:="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"}/lib/main.rc"
 
-export BUD_HOME
-export APP_HOME
-source "${BUD_HOME}/lib/bud.rc"
-source "${APP_HOME}/lib/env.rc"
 
 TESTCOMPILER_SPECIFICATION='{
   "usage": "testpreprocessor [OPTION]... [DIRECTORY]",
@@ -188,7 +181,7 @@ function __list_test_sources() {
   _filter=".*${_filter}.*"
   # shellcheck disable=SC2016
   find "${_output_dir}" -name '*.'"${_extension}" |
-    filter_file '[[ "${_each}" =~ (test-.+|.*-test|test) ]]' |
+    filter_file '[[ "${_each}" =~ '"$(included_tests)"' ]]' |
     filter_file '[[ "${_each}" == *.'"${_extension}"' ]]' |
     filter_file '[[ "${_each}" =~ '"${_filter}"' ]]' |
     sed -r 's!'"${_output_dir}/"'!!' |

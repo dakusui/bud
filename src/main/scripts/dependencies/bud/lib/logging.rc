@@ -7,7 +7,7 @@ function trace() {
   if [[ "${BUD_TRACE:-disabled}" == "enabled" ]]; then
     local _caller
     _caller="$(caller 0)"
-    _caller="$(__bud__format_caller ${_caller})"
+    _caller="$(format_log_record ${_caller})"
     message "TRACE: ${_caller}:" "${@}"
     if [[ "${BUD_LOG_FILE}" != "" ]]; then
       message "TRACE: ${_caller}: " "${@}" 2>>"${BUD_LOG_FILE}"
@@ -19,7 +19,7 @@ function debug() {
   if [[ "${BUD_DEBUG:-disabled}" == "enabled" ]]; then
     local _caller
     _caller="$(caller 0)"
-    _caller="$(__bud__format_caller ${_caller})"
+    _caller="$(format_log_record ${_caller})"
     message "DEBUG: ${_caller}: $(__bud__info_indent)" "${@}"
     if [[ "${BUD_LOG_FILE}" != "" ]]; then
       message "DEBUG: ${_caller}: $(__bud__info_indent)" "${@}" 2>>"${BUD_LOG_FILE}"
@@ -39,7 +39,7 @@ function info() {
     local _caller
     _caller="$(caller "${__bud__stack_offset:-0}")"
     # shellcheck disable=SC2086
-    _caller="$(__bud__format_caller ${_caller})"
+    _caller="$(format_log_record ${_caller})"
     message "INFO:  ${_caller}: $(__bud__info_indent)" "${@}"
     if [[ "${BUD_LOG_FILE}" != "" ]]; then
       message "INFO:  ${_caller}: $(__bud__info_indent)" "${@}" 2>>"${BUD_LOG_FILE}"
@@ -62,7 +62,7 @@ function error() {
     local _caller
     _caller="$(caller 0)"
     # shellcheck disable=SC2086
-    _caller="$(__bud__format_caller ${_caller})"
+    _caller="$(format_log_record ${_caller})"
     message "ERROR: ${_caller}: " "${@}"
     if [[ "${BUD_LOG_FILE}" != "" ]]; then
       message "ERROR: ${_caller}: " "${@}" 2>>"${BUD_LOG_FILE}"
@@ -70,7 +70,7 @@ function error() {
   fi
 }
 
-function __bud__format_caller() {
+function format_log_record() {
   local _line="${1:-???}" _function="${2:-unknown}" _file="${3:-unknown file}"
   _file="${_file/${OUTDIR:-""}/${SRCDIR:-""}}"
   _file="${_file#${PWD}/}"

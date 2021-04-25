@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
-set -eu -o pipefail -o errtrace
-shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
-BUD_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud"
-APP_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
-
-export BUD_HOME
-export APP_HOME
-source "${BUD_HOME}/lib/bud.rc"
-source "${APP_HOME}/lib/cmd_unit.rc"
-source "${APP_HOME}/lib/env.rc"
+source "${APP_HOME:="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"}/lib/main.rc"
 
 CMD_UNIT_SPECIFICATION='{
   "usage": "command-unit [OPTION]... [SUBCOMMAND]...",

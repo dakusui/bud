@@ -1,15 +1,7 @@
 #!/usr/bin/env bash
-set -eu -o pipefail -o errtrace
-shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
-BUD_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")/dependencies/bud"
-APP_HOME="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"
-
-export BUD_HOME
-export APP_HOME
-source "${BUD_HOME}/lib/bud.rc"
+source "${APP_HOME:="$(dirname "$(dirname "${BASH_SOURCE[0]}")")"}/lib/main.rc"
 source "${APP_HOME}/lib/cmd_unit.rc"
-source "${APP_HOME}/lib/env.rc"
 
 TESTRUNNER_SPECIFICATION='{
   "usage": "testrunner [OPTION]... [DIRECTORY]",
@@ -36,7 +28,7 @@ function list_executable_tests() {
   local _workdir="${1%/}" _filter="${2}"
   # shellcheck disable=SC2016
   find "${_workdir}" -name '*.json' -or -name '*.sh' |
-    grep -E '(test-.+|.*-test|test)(\.sh|\.json)' |
+    filter_file '[[ "${_each}" =~ '"$(included_tests)"'(\.sh|\.json) ]]' |
     filter_file '[[ "${_each}" =~ '"${_filter}"' ]]' |
     sed -r 's!'"${_workdir}/"'!!' |
     sort
@@ -88,10 +80,6 @@ function __is_valid() {
     _exit_code=1
   }
   return "${_exit_code}"
-}
-
-function __generate_session_id() {
-  date "+%Y-%m-%d.%H-%M-%S.%N"
 }
 
 #   _run
