@@ -48,10 +48,19 @@ function main() {
     return 0
   fi
   if [[ ${1} == COVERAGE ]]; then
-    main clean prepare coverage
+    main clean prepare doc coverage
     return 0
   fi
-
+  if [[ ${1} == PACKAGE ]]; then
+    #    check_release    doc test package_release test_release release post_release
+    main test build:snapshot test:snapshot push:snapshot
+    return 0
+  fi
+  if [[ ${1} == RELEASE ]]; then
+    #    check_release    doc test package_release test_release release post_release
+    main release_precheck doc test build:release push:release release-postmortem
+    return 0
+  fi
   local -a _stages=()
   _stages+=("$@")
   for i in "${_stages[@]}"; do

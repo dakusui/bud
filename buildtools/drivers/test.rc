@@ -1,18 +1,20 @@
 source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/docker.rc"
 
 function execute_stage() {
-  local _test_filter=${1:-.*} _docker="${2:-false}"
+  local _target="${1:-source}" _test_filter=${1:-.*}
   local _docker_prefix
-  if [[ "${_docker}" == true ]]; then
-    _docker_prefix="/var/lib/cmd-unit"
-    function run_commandunit() {
-      __run_command_unit_with_docker "${@}"
-    }
-  else
+  if [[ "${_target}" == "source" ]]; then
     _docker_prefix=""
     function run_commandunit() {
       __run_command_unit_native "${@}"
     }
+  elif [[ "${_target}" == "snapshot" ]]; then
+    _docker_prefix="/var/lib/cmd-unit"
+    function run_commandunit() {
+      __run_command_unit_with_docker "${@}"
+    }
+  elif [[ "${_target}" == "snapshot" ]]; then
+    :
   fi
 
   export CMD_UNIT_DOCKERDIR_PREFIX="${_docker_prefix}"

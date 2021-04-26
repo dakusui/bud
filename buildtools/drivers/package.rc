@@ -1,5 +1,0 @@
-source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/docker.rc"
-
-function execute_stage() {
-  _build "${TARGET_VERSION}-snapshot"
-}
