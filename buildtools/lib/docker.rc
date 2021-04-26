@@ -6,3 +6,35 @@ function _build() {
   local _version="${1}"
   docker build --build-arg VERSION="${_version}" -t "${DOCKER_REPO_NAME}:${_version}" .
 }
+
+
+function __run_command_unit_with_docker() {
+  local _me
+  _me="$(whoami)"
+  docker run \
+    --user="$(id -u "${_me}"):$(id -g "${_me}")" \
+    --env PROJECT_NAME="command-unit" \
+    --env CMD_UNIT_CONFDIR="${CMD_UNIT_CONFDIR}" \
+    --env CMD_UNIT_DOCKERDIR_PREFIX="${CMD_UNIT_DOCKERDIR_PREFIX}" \
+    -v "${TESTDIR}:/var/lib/cmd-unit${TESTDIR}" \
+    -v "${TESTREPORTDIR}:/var/lib/cmd-unit${TESTREPORTDIR}" \
+    -i \
+    "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" \
+    "${@}"
+}
+
+function __run_command_unit_with_docker_from_entrypoint() {
+  local _entrypoint="${1}"
+  local _me
+  _me="$(whoami)"
+  docker run \
+    --user="$(id -u "${_me}"):$(id -g "${_me}")" \
+    --env PROJECT_NAME="command-unit" \
+    --env CMD_UNIT_CONFDIR="${CMD_UNIT_CONFDIR}" \
+    --env CMD_UNIT_DOCKERDIR_PREFIX="${CMD_UNIT_DOCKERDIR_PREFIX}" \
+    -v "$(pwd):/var/lib/cmd-unit$(pwd)" \
+    --entrypoint="${_entrypoint}" \
+    -i \
+    "${DOCKER_REPO_NAME}:${TARGET_VERSION}-snapshot" \
+    "${@}"
+}
