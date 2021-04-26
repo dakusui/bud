@@ -11,7 +11,7 @@ function to_json_array() {
 }
 
 function json_value_at() {
-  local _path="${1}" _json="${2}"
+  local  _json="${1}" _path="${2}"
   echo "${_json}" | jq -crM "${_path}" || abort "Something went wrong _path:'${_path}' _json='${_json}'"
 }
 

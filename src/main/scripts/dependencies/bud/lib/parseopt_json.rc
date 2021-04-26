@@ -51,7 +51,7 @@ function parseopt() {
   local _options _ret='{}'
   local _short_options _long_options _i
   _spec_json="$(echo "${_spec_json}" | jq -crM .)" || abort "The spec JSON object is not wel-formed."
-  _json_array="$(json_value_at ".options" "${_spec_json}")"
+  _json_array="$(json_value_at "${_spec_json}" ".options")"
   _short_options=$(__bud__options_string "${_json_array}" 0 "")
   _long_options=$(__bud__options_string "${_json_array}" 1 ",")
   local _default_values='{}'
@@ -126,7 +126,7 @@ function parseopt_string_value_for() {
 
 function parseopt_rest_values() {
   local _parsed_opts_json="${1}"
-  json_value_at '.rest[]' "${_parsed_opts_json}"
+  json_value_at "${_parsed_opts_json}" '.rest[]'
 }
 
 function parseopt_array_value_for() {
@@ -141,17 +141,17 @@ function parseopt_boolean_value_for() {
 
 function __bud__parseopt_value_for() {
   local _long_opt_name="${1}" _parsed_opts_json="${2}"
-  json_value_at '.opts."'"${_long_opt_name}"'"' "${_parsed_opts_json}"
+  json_value_at "${_parsed_opts_json}" '.opts."'"${_long_opt_name}"'"'
 }
 
 function print_usage() {
   local _spec_json="${1}"
-  echo "Usage: $(json_value_at '.usage' "${_spec_json}")"
+  echo "Usage: $(json_value_at "${_spec_json}" '.usage')"
   echo ""
-  json_value_at '.description[]' "${_spec_json}"
+  json_value_at "${_spec_json}" '.description[]'
   echo ""
   local _options _i
-  mapfile -t _options < <(json_value_at '.options[]' "${_spec_json}")
+  mapfile -t _options < <(json_value_at "${_spec_json}" '.options[]')
   local _w _i
   _w="$(for _i in "${_options[@]}"; do
     echo "${_i}" | jq -crM '.[1]' | awk '{print length}'
@@ -159,7 +159,7 @@ function print_usage() {
   local _i
   for _i in "${_options[@]}"; do
     local _s
-    _s="$(json_value_at '.[0]' "${_i}")"
+    _s="$(json_value_at "${_i}")" '.[0]'
     if [[ "${_s}" == "" ]]; then
       _s="   "
     else
@@ -169,32 +169,32 @@ function print_usage() {
     _with_value="$(echo "${_i}"| jq -crM '.[2]')"
     if [[ "${_with_value}" == true ]]; then
       local _v
-      mapfile -t _v < <(json_value_at '.[3][]' "${_i}")
+      mapfile -t _v < <(json_value_at "${_i}" '.[3][]')
       if [[ "${#_v[@]}" -gt 0 ]]; then
         _default="(default:'${_v[0]}')"
       fi
     fi
-    printf " %3s %-$((_w + 2))s %s%s\n" "${_s}" "--$(json_value_at '.[1]' "${_i}")" "$(json_value_at '.[4]' "${_i}")" "${_default}"
+    printf " %3s %-$((_w + 2))s %s%s\n" "${_s}" "--$(json_value_at "${_i}" '.[1]')" "$(json_value_at "${_i}" '.[4]')" "${_default}"
   done
   echo
   echo "Examples:"
   local _examples
-  mapfile -t _examples < <(json_value_at '.examples|keys[]' "${_spec_json}")
+  mapfile -t _examples < <(json_value_at "${_spec_json}" '.examples|keys[]')
   local _w=0
   _w="$(for _i in "${_examples[@]}"; do
       echo "${_i}" | awk '{print length}'
   done | sort -n -r | head --lines=1)"
     for _i in "${_examples[@]}"; do
     local _v
-    _v="$(json_value_at '.examples."'"${_i}"'"' "${_spec_json}")"
+    _v="$(json_value_at "${_spec_json}" '.examples."'"${_i}"'"')"
     printf "  %-${_w}s %s\n" "${_i}" "${_v}"
   done
   echo
   local _references
-  mapfile -t _references < <(json_value_at '.references|keys[]' "${_spec_json}")
+  mapfile -t _references < <(json_value_at "${_spec_json}" '.references|keys[]')
   for _i in "${_references[@]}"; do
     local _v
-    echo "${_i}: <$(json_value_at '.references."'"${_i}"'"' "${_spec_json}")>"
+    echo "${_i}: <$(json_value_at "${_spec_json}" '.references."'"${_i}"'"')>"
   done
 }
 
@@ -202,14 +202,14 @@ function __bud__options_string() {
   local _json_array="${1}" _index="${2}" _delimiter="${3}"
   local _arr
   local _ret=""
-  mapfile -t _arr < <(json_value_at '.[]' "${_json_array}")
+  mapfile -t _arr < <(json_value_at "${_json_array}" '.[]')
   for _i in "${_arr[@]}"; do
     local _cur _with_value
-    _cur="$(json_value_at '.['"${_index}"']' "${_i}")"
+    _cur="$(json_value_at "${_i}" '.['"${_index}"']')"
     if [[ "${_cur}" == "" ]]; then
       continue
     fi
-    _with_value=$(json_value_at '.[2]' "${_i}")
+    _with_value=$(json_value_at "${_i}" '.[2]')
     if [[ "${_with_value}" == true ]]; then
       _cur="${_cur}:"
     fi

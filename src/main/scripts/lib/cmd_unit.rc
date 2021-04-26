@@ -8,7 +8,7 @@ function run_test_json() {
   local _precheck_result _precheck
   bud_trap
   _precheck_result="$(precheck_test_json "${_json_object}")"
-  _precheck="$(json_value_at '.report.result.precheck' "${_precheck_result}")"
+  _precheck="$(json_value_at "${_precheck_result}" '.report.result.precheck')"
   local _execution_result="{}"
   if [[ "${_precheck}" == true ]]; then
     _execution_result="$(execute_test_json "${_json_object}")"
@@ -23,7 +23,7 @@ function precheck_test_json() {
   local _json_object="${1}"
   local _cmd_json
   debug "begin precheck"
-  _cmd_json="$(json_value_at '.given' "${_json_object}")"
+  _cmd_json="$(json_value_at "${_json_object}" '.given')"
   debug "check-1"
   run_json_object "${_cmd_json}"
   debug "check-2"
@@ -54,10 +54,10 @@ function __bud__compose_precheck_expectation_json() {
 function execute_test_json() {
   local _json_object="${1}"
   local _cmd_json
-  _cmd_json="$(json_value_at '.when' "${_json_object}")"
+  _cmd_json="$(json_value_at "${_json_object}" '.when')"
   run_json_object "${_cmd_json}"
   local _expectation
-  _expectation="$(json_value_at '.then' "${_json_object}")"
+  _expectation="$(json_value_at "${_json_object}" '.then')"
 
   local _result _execution_report _ret
   _result="$(__bud__verify_cmd_execution_result "${_expectation}")"
@@ -144,7 +144,7 @@ function __bud__verify_exit_code() {
   local _json_object="${1}"
   local _cond
   info_begin "exit code verification: '${_json_object}}'"
-  mapfile -t _cond < <(json_value_at ".exitCode[]" "${_json_object}")
+  mapfile -t _cond < <(json_value_at "${_json_object}" ".exitCode[]")
   mapfile -t _actual_exit_code <"$(bud__file_for_exit_code)"
   if [[ "${_cond[0]}" == "EQUAL" ]]; then
     if [[ "${_cond[1]}" != "${_actual_exit_code[0]}" ]]; then
@@ -169,7 +169,7 @@ function __bud__verify_stdout() {
   local _json_object="${1}"
   local _target_content
   mapfile -t _target_content <"$(bud__file_for_stdout)"
-  _json_object="$(json_value_at ".stdout" "${_json_object}")"
+  _json_object="$(json_value_at "${_json_object}" ".stdout")"
   __bud__verify_target_content "${_json_object}" "${_target_content[@]}"
 }
 
@@ -177,7 +177,7 @@ function __bud__verify_stderr() {
   local _json_object="${1}"
   local _target_content
   mapfile -t _target_content <"$(bud__file_for_stderr)"
-  _json_object="$(json_value_at ".stderr" "${_json_object}")"
+  _json_object="$(json_value_at "${_json_object}" ".stderr")"
   __bud__verify_target_content "${_json_object}" "${_target_content[@]}"
 }
 
@@ -195,11 +195,11 @@ function __bud__verify_target_content() {
   local _json_object="${1}"
   shift
   local _presence_expectation
-  mapfile -t _presence_expectation < <(json_value_at ".present[]" "${_json_object}")
+  mapfile -t _presence_expectation < <(json_value_at "${_json_object}" ".present[]")
   __bud__assert_presence "${_presence_expectation[@]}" "--" "${@}"
 
   local _absence_expectation
-  mapfile -t _absence_expectation < <(json_value_at ".absent[]" "${_json_object}")
+  mapfile -t _absence_expectation < <(json_value_at "${_json_object}" ".absent[]")
   __bud__assert_absence "${_absence_expectation[@]}" "--" "${@}"
 }
 

@@ -12,22 +12,22 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.rc"
 
 function __bud__get_description_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".description[]" "${_json_object}"
+  json_value_at "${_json_object}" ".description[]"
 }
 
 function __bud__get_stdin_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".stdin[]" "${_json_object}"
+  json_value_at "${_json_object}" ".stdin[]"
 }
 
 function __bud__get_shell_name_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".shell.name" "${_json_object}"
+  json_value_at "${_json_object}" ".shell.name"
 }
 
 function __bud__get_shell_options_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".shell.options[]" "${_json_object}"
+  json_value_at "${_json_object}" ".shell.options[]"
 }
 
 function __bud__compose_shell_from_json_object() {
@@ -37,17 +37,17 @@ function __bud__compose_shell_from_json_object() {
 
 function __bud__get_source_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".source[]" "${_json_object}"
+  json_value_at "${_json_object}" ".source[]"
 }
 
 function __bud__get_command_name_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".cmd" "${_json_object}"
+  json_value_at "${_json_object}" ".cmd"
 }
 
 function __bud__get_args_from_json_object() {
   local _json_object="${1}"
-  json_value_at ".args[]" "${_json_object}"
+  json_value_at "${_json_object}" ".args[]"
 }
 
 function __bud__compose_commandline_from_json_object() {
@@ -98,7 +98,7 @@ function __bud__compose_script_from_json_object() {
   echo
 
   local _environment_variables
-  _environment_variables="$(json_value_at '.environmentVariables' "${_json_object}")"
+  _environment_variables="$(json_value_at "${_json_object}" '.environmentVariables')"
   info "_json_object: '${_json_object}'"
   jq -ncrM --argjson v "${_environment_variables}" '$v|keys[]|[., $v[.]]|"export " + .[0] + "=\"" + .[1] + "\""'
   # Print an empty line for readability

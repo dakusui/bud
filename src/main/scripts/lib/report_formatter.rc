@@ -4,9 +4,9 @@ readonly __CMD_UNIT__REPORT_FORMATTER=true
 function print_test_report() {
   local _json_object="${1}"
   local _successful="not successful" _i  _filter _testdir _summary
-  _summary=$(json_value_at ".report.summary" "${_json_object}")
-  _filter=$(json_value_at ".filter" "${_summary}")
-  _testdir=$(json_value_at ".testdirs[]" "${_summary}")
+  _summary=$(json_value_at "${_json_object}" ".report.summary")
+  _filter=$(json_value_at "${_summary}" ".filter")
+  _testdir=$(json_value_at "${_summary}" ".testdirs[]")
   _i="$(echo "${_json_object}" | jq '.wasSuccessful')"
   if [[ "${_i}" == true ]]; then
     _successful="successful"
@@ -100,14 +100,14 @@ function __error_test_details() {
 function __test_details() {
   local _filter="${1}" _json_object="${2}"
   local _result_objects _i
-  mapfile -t _result_objects < <(json_value_at ".report.test_results[] | ${_filter}" "${_json_object}")
+  mapfile -t _result_objects < <(json_value_at "${_json_object}" ".report.test_results[] | ${_filter}")
 
   if [[ "${#_result_objects[@]}" == 0 ]]; then
     echo "No test was found in this category."
   else
     for _i in "${_result_objects[@]}"; do
       local _test_name _stage
-      _test_name="$(json_value_at '.name' "${_i}")"
+      _test_name="$(json_value_at "${_i}" '.name')"
       _stage="$(__find_defect_stage "${_i}")"
       echo "=== ${_test_name}"
       echo
@@ -138,7 +138,7 @@ function __test_details() {
 function __find_defect_stage() {
   local _result_json_object="${1}"
   local _precheck
-  _precheck="$(json_value_at '.report.result.precheck' "${_result_json_object}")"
+  _precheck="$(json_value_at "${_result_json_object}" '.report.result.precheck')"
   if [[ "${_precheck}" != true ]]; then
     echo "precheck"
     return 0
@@ -149,8 +149,8 @@ function __find_defect_stage() {
 function __describe_exitcodecheck_result() {
   local _report_json_object="${1}"
   local _was_successful _json_object_exitcode
-  _json_object_exitcode="$(json_value_at ".report.result.exitCode" "${_report_json_object}")"
-  _was_successful="$(json_value_at '.success' "${_json_object_exitcode}")"
+  _json_object_exitcode="$(json_value_at "${_report_json_object}" ".report.result.exitCode")"
+  _was_successful="$(json_value_at "${_json_object_exitcode}" '.success')"
   if [[ "${_was_successful}" == true ]]; then
     # shellcheck disable=SC2016
     echo 'Check for exit code was successful.'
@@ -169,11 +169,11 @@ function __describe_filecheck_result() {
   # shellcheck disable=SC2016
   echo '.Actual output to `'"${_file}"'` in `'${_stage}'` stage'
   echo '----'
-  json_value_at ".report.${_stage}.${_file}[]" "${_report_json_object}"
+  json_value_at "${_report_json_object}" ".report.${_stage}.${_file}[]"
   echo '----'
 
-  _json_object_file="$(json_value_at ".report.result.${_file}" "${_report_json_object}")"
-  _was_successful="$(json_value_at '.success' "${_json_object_file}")"
+  _json_object_file="$(json_value_at "${_report_json_object}" ".report.result.${_file}")"
+  _was_successful="$(json_value_at "${_json_object_file}" '.success')"
   if [[ "${_was_successful}" == true ]]; then
     # shellcheck disable=SC2016
     echo 'Check for `'"${_file}"'` was successful.'
@@ -200,7 +200,7 @@ function __framework_output() {
 
   # !-- framework output
   local _driver_output
-  _driver_output="$(json_value_at ".report.driverOutput.${_file}" "${_driver_output}")"
+  _driver_output="$(json_value_at "${_driver_output}" ".report.driverOutput.${_file}")"
   echo ".${_file}"
   echo "----"
   echo "${_driver_output}"
@@ -211,7 +211,7 @@ function __framework_output() {
 function __describe_mismatch() {
   local _json_object_file="${1}"
   local _mismatch_description _i
-  mapfile -t _mismatch_description < <(json_value_at ".messages[]" "${_json_object_file}")
+  mapfile -t _mismatch_description < <(json_value_at "${_json_object_file}" ".messages[]")
   if [[ ${#_mismatch_description[@]} == 0 ]]; then
     _mismatch_description=("(No mismatch description was given.)")
   fi
@@ -230,7 +230,7 @@ function __skipped_test_names() {
 
 function __extract_test_names() {
   local _query="${1}" _json_object="${2}"
-  json_value_at '.report.test_results[] | '"${_query}"' | .name' "${_json_object}"
+  json_value_at "${_json_object}" '.report.test_results[] | '"${_query}"' | .name'
 }
 
 function __format_test_names() {
@@ -247,5 +247,5 @@ function __format_test_names() {
 
 function __get_report_attr() {
   local _attr="${1}" _json_object="${2}"
-  printf '%8s:%6s\n' "${_attr^^}" "$(json_value_at ".report.summary.${_attr}" "${_json_object}")"
+  printf '%8s:%6s\n' "${_attr^^}" "$(json_value_at "${_json_object}" ".report.summary.${_attr}")"
 }
