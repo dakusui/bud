@@ -1,6 +1,12 @@
 source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/stage_handler_dispatcher.rc"
 source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/docker.rc"
 
+function execute_stage() {
+  local _target="${1:-"source"}" _filter="${2:-.*}"
+  shift
+  buildtools__execute_stage "${_target}" "${_filter}" "${@}"
+}
+
 function __run_commandunit() {
   local _test_filter="${1}"
   shift

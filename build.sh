@@ -11,7 +11,7 @@ __execute_stage_stage_name=
 function __execute_stage() {
   local _stage="${1}"
   shift
-  message "EXECUTING:${_stage}..."
+  message "EXECUTING:${_stage}:'${*}'"
   {
     __execute_stage_driver_filename="$(dirname "${BASH_SOURCE[0]}")/buildtools/drivers/${_stage}.rc"
     __execute_stage_stage_name="${_stage}"
