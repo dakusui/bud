@@ -151,6 +151,7 @@ function __process_files() {
     if [[ ! -e "${_dest}" || "${_dest}" -ot "${_src}" ]]; then
       info "- '${_i}'"
       _cmd="$(__process_files_convert "${_src}" "${_dest}")"
+      debug "_cmd: '${_cmd}'"
       if [[ "${_is_parallel}" == true ]]; then
         eval "${_cmd}" &
       else
@@ -174,6 +175,7 @@ function __compile_tests() {
   local _pwd
   _pwd="$(pwd)"
   export JF_PATH="${_pwd}:${_output_dir}"
+  info "JF_PATH: '${JF_PATH}'"
   __process_jsonpp_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 }
 
