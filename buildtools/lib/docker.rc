@@ -34,7 +34,7 @@ function run_command_unit_with_released_docker_image_from_entrypoint() {
 
 function __run_command_unit_with_source() {
   local _executable="${EXEC_BASEDIR}/bin/command-unit"
-  message "Running command-runner(source): '${_image_name}'"
+  message "Running command-runner(source): '${_executable}'"
   "${_executable}" "${@}"
 }
 

@@ -22,6 +22,7 @@ TESTCOMPILER_SPECIFICATION='{
     "github project": "https://github.com/dakusui/bud"
   }
 }'
+APP_LIB="${APP_HOME}/lib"
 
 function main() {
   local _parsed_opts_json
@@ -174,7 +175,7 @@ function __compile_tests() {
 
   local _pwd
   _pwd="$(pwd)"
-  export JF_PATH="${_pwd}:${_output_dir}"
+  export JF_PATH="${_pwd}:${_output_dir}:${APP_LIB}/jsonpp"
   info "JF_PATH: '${JF_PATH}'"
   __process_jsonpp_files "${_output_dir}" "${_is_parallel}" "${_filter}"
 }
