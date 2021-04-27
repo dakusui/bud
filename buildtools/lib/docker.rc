@@ -3,7 +3,9 @@ readonly __BUILDTOOLS__DOCKER_RC=true
 
 function _build() {
   local _version="${1}"
-  docker build --build-arg VERSION="${_version}" -t "${DOCKER_REPO_NAME}:${_version}" .
+  local _image_name="${DOCKER_REPO_NAME}:${_version}"
+  message "Building command-runner: '${_image_name}'"
+  docker build --build-arg VERSION="${_version}" -t "${_image_name}" .
 }
 
 function run_command_unit_with_source() {
@@ -31,14 +33,17 @@ function run_command_unit_with_released_docker_image_from_entrypoint() {
 }
 
 function __run_command_unit_with_source() {
-  "${EXEC_BASEDIR}/bin/command-unit" "${@}"
+  local _executable="${EXEC_BASEDIR}/bin/command-unit"
+  message "Running command-runner(source): '${_image_name}'"
+  "${_executable}" "${@}"
 }
 
 function __run_command_unit_with_docker() {
   local _suffix="${1}"
   shift
-  local _me
+  local _me _image_name="${DOCKER_REPO_NAME}:${TARGET_VERSION}${_suffix}"
   _me="$(whoami)"
+  message "Running command-runner(docker): '${_image_name}'"
   docker run \
     --user="$(id -u "${_me}"):$(id -g "${_me}")" \
     --env PROJECT_NAME="command-unit" \
@@ -46,16 +51,16 @@ function __run_command_unit_with_docker() {
     --env CMD_UNIT_DOCKERDIR_PREFIX="${CMD_UNIT_DOCKERDIR_PREFIX}" \
     -v "${TESTDIR}:/var/lib/cmd-unit${TESTDIR}" \
     -v "${TESTREPORTDIR}:/var/lib/cmd-unit${TESTREPORTDIR}" \
-    -i \
-    "${DOCKER_REPO_NAME}:${TARGET_VERSION}${_suffix}" \
+    -i "${_image_name}" \
     "${@}"
 }
 
 function __run_command_unit_with_docker_from_entrypoint() {
   local _entrypoint="${1}" _suffix="${2}"
   shift 2
-  local _me
+  local _me _image_name="${DOCKER_REPO_NAME}:${TARGET_VERSION}${_suffix}"
   _me="$(whoami)"
+  message "Running command-runner(docker): '${_image_name}'"
   docker run \
     --user="$(id -u "${_me}"):$(id -g "${_me}")" \
     --env PROJECT_NAME="command-unit" \
@@ -63,7 +68,6 @@ function __run_command_unit_with_docker_from_entrypoint() {
     --env CMD_UNIT_DOCKERDIR_PREFIX="${CMD_UNIT_DOCKERDIR_PREFIX}" \
     -v "$(pwd):/var/lib/cmd-unit$(pwd)" \
     --entrypoint="${_entrypoint}" \
-    -i \
-    "${DOCKER_REPO_NAME}:${TARGET_VERSION}${_suffix}" \
+    -i "${_image_name}" \
     "${@}"
 }
