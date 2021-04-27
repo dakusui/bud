@@ -3,7 +3,7 @@ source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/docker.rc"
 
 function execute_stage() {
   local _target="${1:-"source"}" _filter="${2:-.*}"
-  shift
+  shift 2
   buildtools__execute_stage "${_target}" "${_filter}" "${@}"
 }
 
