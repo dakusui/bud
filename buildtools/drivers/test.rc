@@ -4,7 +4,9 @@ source "$(dirname "$(dirname "${BASH_SOURCE[0]}")")/lib/docker.rc"
 function execute_stage() {
   local _target="${1:-"source"}" _filter="${2:-.*}"
   shift 2
+  message "BEGIN HANDLER(test): target: '${_target}'; filter: '${_filter}': '${*}'"
   buildtools__execute_stage "${_target}" "${_filter}" "${@}"
+  message "END HANDLER(test)"
 }
 
 function __run_commandunit() {
@@ -15,8 +17,7 @@ function __run_commandunit() {
     --filter="${_test_filter}" \
     --test-report="${TESTREPORTDIR}" \
     --test-srcdir="${TESTDIR}" \
-    --test-workdir="${TESTDIR}" \
-    "${@}"
+    --test-workdir="${TESTDIR}"
 }
 
 # source

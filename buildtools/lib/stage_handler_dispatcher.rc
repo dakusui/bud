@@ -14,20 +14,22 @@ function handle_release() {
 }
 
 function execute_stage() {
-  message "DISPATCHING: '${*}'"
-  buildtools__execute_stage "${@}"
-  message "FINISHED: '${*}'"
+  local _target="${1:-source}"
+  shift
+  message "BEGIN HANDLER: target: '${_target}'; '${*}'"
+  buildtools__execute_stage "${_target}" "${@}"
+  message "END HANDLER"
 }
 
 function buildtools__execute_stage() {
-  local _target="${1}" _filter="${2}"
-  shift 2
+  local _target="${1}"
+  shift
   if [[ "${_target}" == "source" ]]; then
-    handle_source "${_filter}" "${@}"
+    handle_source "${@}"
   elif [[ "${_target}" == "snapshot" ]]; then
-    handle_snapshot "${_filter}" "${@}"
+    handle_snapshot "${@}"
   elif [[ "${_target}" == "release" ]]; then
-    handle_release "${_filter}" "${@}"
+    handle_release "${@}"
   else
     abort "Unknown target: '${_target}' was specified. args: '${*}'"
   fi
